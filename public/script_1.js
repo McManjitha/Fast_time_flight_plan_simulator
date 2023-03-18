@@ -7,15 +7,14 @@ const socket = new WebSocket('ws://localhost:3000');
 //------------------ variables --------------------------------------
 var gateWays = []; // contain waypoints
 var flightInfo = []; // contain information about flights
+var firstWaypoint, secondWaypoint, firstLabel, secondLabel;
+
 
 //---------------------------------------------------------------------
 
 socket.onmessage = (event) => {
-  //const data = JSON.parse(event.data);
-  //console.log(data);
 
   const data = JSON.parse(event.data);
-  //console.log('Received data:', data);
 
   // Extract the array of objects from collection1
   const collection1 = data.collection1;
@@ -111,7 +110,8 @@ function initMap() {
   var initLng = gateWays[0].lng;
   //console.log('initLng = '+initLng);
 
-  var firstWaypoint, secondWaypoint, firstLabel, secondLabel;
+
+
   for(var i = 0; i < flightInfo.length; i++){
     firstLabel = flightInfo[i].route[0];
     secondLabel = flightInfo[i].route[1];
