@@ -8,6 +8,7 @@ const socket = new WebSocket('ws://localhost:3000');
 var gateWays = []; // contain waypoints
 var flightInfo = []; // contain information about flights
 var firstWaypoint, secondWaypoint, firstLabel, secondLabel;
+var flightMarkers = []; // contain all the flight markers
 
 
 //---------------------------------------------------------------------
@@ -135,6 +136,16 @@ function initMap() {
     }else{
       flightInfo[i].increment = 1*Math.abs(flightInfo[i].increment);
     }
+
+    // create the plane marker
+    flightMarkers[i] = new google.maps.Marker({
+      map: map,
+      position: { lat: flightInfo[i].initLat, lng: flightInfo[i].initLng },
+      icon : {
+        url: flightInfo[i].markerName,
+        scaledSize :  new google.maps.Size(30, 30)
+      }
+    });
   }
 
 
