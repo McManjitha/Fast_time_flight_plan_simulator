@@ -54,8 +54,8 @@ socket.onmessage = (event) => {
     };
   });
 1
-  //console.log(gateWays);
-  //console.log(flightInfo);
+  console.log(gateWays);
+  console.log(flightInfo);
 
   //gateWays = data[0];
   //const data = ways[0];
@@ -195,13 +195,19 @@ function initMap() {
     // this repeats at 1000ms intervals and calculate the new location of the plane
     intervalId1 = setInterval(function() {
       // Get the new coordinates for the marker
-    //if(tanvalue > 0 && tanvalue <= 90){
+      for(var j = 0; j < flightInfo.length; j++){
+        flightInfo[j].lng = flightMarkers[j].getPosition().lng() + flightInfo[j].increment;
+        flightInfo[j].lat = flightInfo[j].lng*flightInfo[j].m + flightInfo[j].c;
+        flightMarkers[j].setPosition({lat:flightInfo[j].lat, lng:flightInfo[j].lng});
+      }
+
+
       lng = marker.getPosition().lng() + increment;
       lat = lng*m + c;
     
     // Update the marker position
     marker.setPosition({ lat: lat, lng: lng });
-    }, 1000);
+    }, 2000);
   
   
 
