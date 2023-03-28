@@ -28,8 +28,8 @@ function createMarker(coordinates){
   var marker = new google.maps.Marker({
     map:map,
     icon:{
-      url : "./images/map-marker-round-eps-icon-vector-10894350-removebg-preview.png",
-      scaledSize: new google.maps.Size(10, 10)
+      url : "./images/waypoint1.png",
+      scaledSize: new google.maps.Size(20, 20)
     },
     position : {lat : coordinates.lat, lng : coordinates.lng},
     label : coordinates.label
@@ -62,6 +62,7 @@ function makeImageString(angle){
   return fileName;
 }
 
+// this function is not used. 'initialString_2()' is used instead of this.
 function initalString(initLat, initLng, gateWay){
   var grad = calcGradient(initLng, initLat, gateWay.lng, gateWay.lat);
   tanvalue = clacPlaneAngle(grad);
@@ -73,6 +74,7 @@ function initalString(initLat, initLng, gateWay){
 
 }
 
+// this is the working function
 function initalString_2(initLat, initLng, nextLat, nextLng){
   var grad = calcGradient(initLng, initLat, nextLng, nextLat);
   tanvalue = clacPlaneAngle(grad);
