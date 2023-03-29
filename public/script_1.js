@@ -52,11 +52,12 @@ socket.onmessage = (event) => {
       markerName:null,
       tanvalue:null,
       count:1,
-      increment:0.01,
+      increment:0.05,
       going : true
     };
   });
-1
+
+  //flightInfo.push(flightInfo_1[1]);
   console.log(gateWays);
   console.log(flightInfo);
 
@@ -162,11 +163,6 @@ function initMap() {
     }
     
   }
-
-/*
-  var c, lat, lng;
-  var m;//-30.1845
-  var increment  = 0.3;*/
   
   // create gate way markers
   for(var gws = 0; gws < gateWays.length; gws++){
@@ -211,19 +207,131 @@ function initMap() {
     setTimeout(function() {
     intervalId1 = setInterval(function() {
       // Get the new coordinates for the marker
-      for(var j = 0; j < flightInfo.length; j++){
-        if(flightInfo[j].going){
-          flightInfo[j].lng = flightMarkers[j].getPosition().lng() + flightInfo[j].increment;
-          flightInfo[j].lat = flightInfo[j].lng*flightInfo[j].m + flightInfo[j].c;
-          flightMarkers[j].setPosition({lat:flightInfo[j].lat, lng:flightInfo[j].lng});
+      for(var k = 0; k < flightInfo.length; k++){
+        if(flightInfo[k].going){
+          flightInfo[k].lng = flightMarkers[k].getPosition().lng() + flightInfo[k].increment;
+          flightInfo[k].lat = flightInfo[k].lng*flightInfo[k].m + flightInfo[k].c;
+          flightMarkers[k].setPosition({lat:flightInfo[k].lat, lng:flightInfo[k].lng});
         } 
+        if(flightInfo[k].going){
+          if(flightInfo[k].initLat > flightInfo[k].nextLat){
+            if( flightMarkers[k].getPosition().lat() < flightInfo[k].nextLat && flightInfo[k].count < flightInfo[k].route.length){
+
+              flightInfo[k].count = flightInfo[k].count + 1;
+
+              if(flightInfo[k].count >= flightInfo[k].route.length){
+                //marker.setPosition({ lat: gateWays[ gateWays.length-1].lat, lng: gateWays[ gateWays.length-1].lng });
+                //console.log('stop lat = '+flightInfo[k].nextLat);
+                //console.log('stop lng = '+flightInfo[k].nextLng);
+
+                flightMarkers[k].setPosition({lat : flightInfo[k].nextLat, lng : flightInfo[k].nextLng});
+                flightInfo[k].going = false;
+                continue;
+              }
+              // Here, the plane reaches a destination gateway. Then it assign coordinates of the 
+              // previous journey end gateway to initial gateway coordiates of the next journey
+              flightInfo[k].initLat =  flightInfo[k].nextLat;
+              flightInfo[k].initLng = flightInfo[k].nextLng;
+              console.log('initlat = '+flightInfo[k].initLat);
+              console.log('initlng = '+flightInfo[k].initLng);
+              // plane stopping
+              console.log('label name = '+flightInfo[k].route[flightInfo[k].count]);
+              var temp1 = gateWays.find((obj) => obj.label == flightInfo[k].route[flightInfo[k].count]);
+              console.log('temp1 = '+temp1.label);
+              flightInfo[k].nextLat = temp1.lat;
+              flightInfo[k].nextLng = temp1.lng;
+              console.log('nextlat = '+flightInfo[k].nextLat);
+              console.log('nextlng = '+flightInfo[k].nextLng);
+        
+              // calculate the new gradient and intercept of the next journey
+              flightInfo[k].m = calcGradient(flightInfo[k].initLng, flightInfo[k].initLat,flightInfo[k].nextLng, flightInfo[k].nextLat)
+              flightInfo[k].c = calcIntercept(flightInfo[k].nextLng, flightInfo[k].nextLat, flightInfo[k].m);
+              //m = calcGradient(initLng, initLat, gateWays[count].lng, gateWays[count].lat);
+              //c = calcIntercept(gateWays[count].lng, gateWays[count].lat, m);
+              //console.log(m);
+              flightInfo[k].tanvalue = clacPlaneAngle(flightInfo[k].m);
+              
+              if(flightInfo[k].initLat > flightInfo[k].nextLat){
+                flightInfo[k].tanvalue = flightInfo[k].tanvalue + 180;
+              }
+      
+              flightInfo[k].markerName = makeImageString(flightInfo[k].tanvalue-40);
+        
+              icon = {
+                url: flightInfo[k].markerName,
+                scaledSize: new google.maps.Size(30, 30)
+              };
+              
+              flightMarkers[k].setIcon(icon);
+              //marker.setIcon(icon);
+              // selecting the right increment whether negative or positive
+              if(flightInfo[k].initLng > flightInfo[k].nextLng){
+                flightInfo[k].increment = -1*Math.abs(flightInfo[k].increment);
+              }else{
+                flightInfo[k].increment = Math.abs(flightInfo[k].increment);
+              }
+            }
+          }else if(flightInfo[k].initLat <   flightInfo[k].nextLat){
+            //if(marker.getPosition().lat() > gateWays[count].lat && count < gateWays.length){
+            if( flightMarkers[k].getPosition().lat() > flightInfo[k].nextLat && flightInfo[k].count < flightInfo[k].route.length){
+              // Here, the plane reaches a destination gateway. Then it assign coordinates of the 
+              // previous journey end gateway to initial gateway coordiates of the next journey
+              flightInfo[k].count = flightInfo[k].count + 1;
+              //console.log('count = '+flightInfo[k].count);
+              //console.log('Limit-count = '+(flightInfo[k].route.length));
+
+              if(flightInfo[k].count >= flightInfo[k].route.length){
+                //marker.setPosition({ lat: gateWays[ gateWays.length-1].lat, lng: gateWays[ gateWays.length-1].lng });
+                flightMarkers[k].setPosition({lat : flightInfo[k].nextLat, lng : flightInfo[k].nextLng});
+                flightInfo[k].going = false;
+                //console.log('The End');
+                continue;
+              }
+              flightInfo[k].initLat =  flightInfo[k].nextLat;
+              flightInfo[k].initLng = flightInfo[k].nextLng;
+              //console.log('initlat = '+flightInfo[k].initLat);
+              //console.log('initlng = '+flightInfo[k].initLng);
+      
+              // plane stopping
+              
+              var temp2 = gateWays.find((obj) => obj.label == flightInfo[k].route[flightInfo[k].count]);
+              console.log('temp2 = '+temp2.label);
+
+              flightInfo[k].nextLat = temp2.lat;
+              flightInfo[k].nextLng = temp2.lng;
+              //console.log('nextlat = '+flightInfo[k].nextLat);
+              //console.log('nextlng = '+flightInfo[k].nextLng);
+        
+              // calculate the new gradient and intercept of the next journey
+              flightInfo[k].m = calcGradient(flightInfo[k].initLng, flightInfo[k].initLat,flightInfo[k].nextLng, flightInfo[k].nextLat)
+              flightInfo[k].c = calcIntercept(flightInfo[k].nextLng, flightInfo[k].nextLat, flightInfo[k].m);
+        
+              flightInfo[k].tanvalue = clacPlaneAngle(flightInfo[k].m);
+              
+              if(flightInfo[k].initLat >  flightInfo[k].nextLat){
+                flightInfo[k].tanvalue = flightInfo[k].tanvalue + 180;
+              }
+      
+              flightInfo[k].markerName = makeImageString(flightInfo[k].tanvalue-40);
+        
+              icon = {
+                url: flightInfo[k].markerName,
+                scaledSize: new google.maps.Size(30, 30)
+              };
+  
+              flightMarkers[k].setIcon(icon);
+              // selecting the right increment whether negative or positive
+              if(flightInfo[k].initLng > flightInfo[k].nextLng){
+                flightInfo[k].increment = -1*Math.abs(flightInfo[k].increment);
+              }else{
+                flightInfo[k].increment = Math.abs(flightInfo[k].increment);
+              }
+            }
+          }
+        }
       }
-      //lng = marker.getPosition().lng() + increment;
-      //lat = lng*m + c;
-    
-    // Update the marker position
-    //marker.setPosition({ lat: lat, lng: lng });
-    }, 2000);
+
+    }, 1000);
   }, 5000);
   
   
@@ -235,7 +343,7 @@ function initMap() {
 
     for(var k = 0; k < flightInfo.length; k++){
 
-      if(flightInfo[k].going){
+      /*if(flightInfo[k].going){
         if(flightInfo[k].initLat > flightInfo[k].nextLat){
           if( flightMarkers[k].getPosition().lat() < flightInfo[k].nextLat && flightInfo[k].count < flightInfo[k].route.length){
   
@@ -332,7 +440,7 @@ function initMap() {
             }
           }
         }
-      }
+      }*/
       
     }
     
