@@ -28,8 +28,8 @@ function createMarker(coordinates){
   var marker = new google.maps.Marker({
     map:map,
     icon:{
-      url : "./images/waypoint1.png",
-      scaledSize: new google.maps.Size(20, 20)
+      url : "./images/waypoint2.png",
+      scaledSize: new google.maps.Size(15, 15)
     },
     position : {lat : coordinates.lat, lng : coordinates.lng},
     label : coordinates.label

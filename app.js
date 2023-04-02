@@ -71,9 +71,9 @@ const PlaneShcema = new mongoose.Schema({
   Routing : {
     type : String
   }
-}, {collection : 'Plane_data'});
+}, {collection : 'Plane_data1'});
 
-const Planes = new mongoose.model('Plane_data', PlaneShcema);
+const Planes = new mongoose.model('Plane_data1', PlaneShcema);
 
  
 
@@ -82,7 +82,7 @@ app.get('/', (req, res) => {
 })
 
 const Collection1 = mongoose.model('Waypoint', WayPointSchema);
-const Collection2 = mongoose.model('Plane_data', PlaneShcema);
+const Collection2 = mongoose.model('Plane_data1', PlaneShcema);
 
 
 // Create WebSocket server
