@@ -11,7 +11,7 @@ var flightInfo = []; // contain information about flights
 var firstWaypoint, secondWaypoint, firstLabel, secondLabel;
 var flightMarkers = []; // contain all the flight markers
 var currentFLight; // used in second setInterval
-const options = { hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: false };
+const options = { hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: false }; // format of the time obtained by the local computer
 var radius = 5000; // minimum separation between two planes
 
 
@@ -30,7 +30,8 @@ socket.onmessage = (event) => {
     return {
       lat: obj.Lat,
       lng: obj.Lng,
-      label: obj.Node_name
+      label: obj.Node_name,
+      waypointMarker: null // stores the waypoint marker
 
     };
   });
@@ -108,8 +109,10 @@ function initMap() {
     center: { lat: -34.397, lng: 150.644 },
     zoom: 0,
     maxZoom: 15,
-    minZoom: 2
+    minZoom: 5
   });
+
+  
 
 
   //Gateway information
@@ -138,6 +141,7 @@ function initMap() {
   for(var i = 0; i < allFlights.length; i++){
     if(allFlights[i].going){
 
+      // Finding the waypoints of the first journey
       firstLabel = allFlights[i].route[0];
       secondLabel = allFlights[i].route[1];
 
@@ -166,15 +170,7 @@ function initMap() {
         allFlights[i].increment = 1*Math.abs(allFlights[i].increment);
       }
 
-      // create the plane marker
-      /*flightMarkers[i] = new google.maps.Marker({
-        map: map,
-        position: { lat: allFlights[i].initLat, lng: allFlights[i].initLng },
-        icon : {
-          url: allFlights[i].markerName,
-          scaledSize :  new google.maps.Size(20, 20)
-        }
-      });*/
+        // creates the marker of the planes
       const newMarker = new google.maps.Marker({
         map: map,
         position: { lat: allFlights[i].initLat, lng: allFlights[i].initLng },
@@ -203,8 +199,35 @@ function initMap() {
 
   // create gate way markers
   for(var gws = 0; gws < gateWays.length; gws++){
-    createMarker(gateWays[gws]);
+    gateWays[gws].waypointMarker = createMarker(gateWays[gws]);
   }
+
+  // this event listner listns to the changes of the zooming and adjust the size of the waypoints accordingly
+  google.maps.event.addListener(map, 'zoom_changed', function() {
+    var zoomLevel = map.getZoom();
+    if(zoomLevel == 5){
+      for(var gws = 0; gws < gateWays.length; gws++){
+        gateWays[gws].waypointMarker.setIcon({
+          url: "./images/waypoint2.png",
+          scaledSize: new google.maps.Size(7, 7)
+        });
+      }
+    }else if(zoomLevel == 7){
+      for(var gws = 0; gws < gateWays.length; gws++){
+        gateWays[gws].waypointMarker.setIcon({
+          url: "./images/waypoint2.png",
+          scaledSize: new google.maps.Size(10, 10)
+        });
+      }
+    }else if(zoomLevel == 9){
+      for(var gws = 0; gws < gateWays.length; gws++){
+        gateWays[gws].waypointMarker.setIcon({
+          url: "./images/waypoint2.png",
+          scaledSize: new google.maps.Size(15, 15)
+        });
+      }
+    }
+  });
 
 
   //-------------------------------------------------------------------------------------------
@@ -347,7 +370,7 @@ function initMap() {
               let distance = google.maps.geometry.spherical.computeDistanceBetween(flightInfo[p].marker.position, flightInfo[pInner].marker.position);
               if (distance < radius) {
                   // markers are colliding
-                  console.log(flightInfo[p].callsign+' colllides with '+flightInfo[pInner].callsign);
+                  //console.log(flightInfo[p].callsign+' colllides with '+flightInfo[pInner].callsign);
               } 
             }
           }
@@ -355,12 +378,6 @@ function initMap() {
       }, 1000);
   }, 5000);
 
-}
-
-const testFunction = () =>{
-
-  clearInterval(intervalId1);
-  clearInterval(intervalId2);
 }
 
 window.initMap = initMap;
