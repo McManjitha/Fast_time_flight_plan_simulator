@@ -13,7 +13,10 @@ var flightMarkers = []; // contain all the flight markers
 var currentFLight; // used in second setInterval
 const options = { hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: false }; // format of the time obtained by the local computer
 var radius = 5000; // minimum separation between two planes
-
+var compArr = []; // array that temporily stores the flight data for collision detection
+var table; //collision-table
+var cell1, cell2, cell3; // cells of the collision table
+var allFlights_1 = [];
 
 //---------------------------------------------------------------------
 
@@ -92,8 +95,11 @@ socket.onmessage = (event) => {
     });
 
   }, 7000);*/
+  /*for(let i = 0; i < 52; i++){
+    allFlights.push(allFlights_1[58]);
 
-  //flightInfo.push(flightInfo_1[1]);
+  }*/
+
   //console.log(gateWays);
   //console.log(flightInfo);
 
@@ -106,10 +112,10 @@ var waypointList;
 function initMap() {
   // Initialize the map
   map = new google.maps.Map(document.getElementById("map"), {
-    center: { lat: -34.397, lng: 150.644 },
+    center: { lat: 1.99702, lng: 106.66321 },
     zoom: 0,
     maxZoom: 15,
-    minZoom: 5
+    minZoom: 6
   });
 
   
@@ -177,9 +183,18 @@ function initMap() {
         icon : {
           url: allFlights[i].markerName,
           scaledSize :  new google.maps.Size(20, 20)
-        }
+        },
+        /*label:{
+          text : allFlights[i].callsign,
+          labelVisible : false
+        },*/
+        setTitle : allFlights[i].callsign
       });
       allFlights[i].marker = newMarker;
+
+      allFlights[i].marker.addListener("click", function(){
+        console.log(this.setTitle);
+      })
     }
     
   }
@@ -200,6 +215,10 @@ function initMap() {
   // create gate way markers
   for(var gws = 0; gws < gateWays.length; gws++){
     gateWays[gws].waypointMarker = createMarker(gateWays[gws]);
+    gateWays[gws].waypointMarker.addListener("click", function(){
+      console.log(this.setTitle);
+    })
+
   }
 
   // this event listner listns to the changes of the zooming and adjust the size of the waypoints accordingly
@@ -209,7 +228,7 @@ function initMap() {
       for(var gws = 0; gws < gateWays.length; gws++){
         gateWays[gws].waypointMarker.setIcon({
           url: "./images/waypoint2.png",
-          scaledSize: new google.maps.Size(7, 7)
+          scaledSize: new google.maps.Size(1, 1)
         });
       }
     }else if(zoomLevel == 7){
@@ -263,30 +282,34 @@ function initMap() {
                   // previous journey end gateway to initial gateway coordiates of the next journey
                   flightInfo[k].initLat =  flightInfo[k].nextLat;
                   flightInfo[k].initLng = flightInfo[k].nextLng;
-                  //console.log('initlat = '+flightInfo[k].initLat);
-                  //console.log('initlng = '+flightInfo[k].initLng);
+                  console.log('initlat = '+flightInfo[k].initLat);
+                  console.log('initlng = '+flightInfo[k].initLng);
                   // plane stopping
-                  //console.log('label name = '+flightInfo[k].route[flightInfo[k].count]);
+                  console.log('label name = '+flightInfo[k].route[flightInfo[k].count]);
+
                   var temp1 = gateWays.find((obj) => obj.label == flightInfo[k].route[flightInfo[k].count]);
-                  //console.log('temp1 = '+temp1.label);
+                  console.log('temp1 = '+temp1.label);
                   flightInfo[k].nextLat = temp1.lat;
                   flightInfo[k].nextLng = temp1.lng;
-                  //console.log('nextlat = '+flightInfo[k].nextLat);
-                  //console.log('nextlng = '+flightInfo[k].nextLng);
+                  console.log('nextlat = '+flightInfo[k].nextLat);
+                  console.log('nextlng = '+flightInfo[k].nextLng);
             
                   // calculate the new gradient and intercept of the next journey
                   flightInfo[k].m = calcGradient(flightInfo[k].initLng, flightInfo[k].initLat,flightInfo[k].nextLng, flightInfo[k].nextLat)
                   flightInfo[k].c = calcIntercept(flightInfo[k].nextLng, flightInfo[k].nextLat, flightInfo[k].m);
-                  //m = calcGradient(initLng, initLat, gateWays[count].lng, gateWays[count].lat);
+                  //m = calcGradient(flightInfo[k].initLng, flightInfo[k].initLat, gateWays[flightInfo[k].count].lng, gateWays[flightInfo[k].count].lat);
                   //c = calcIntercept(gateWays[count].lng, gateWays[count].lat, m);
-                  //console.log(m);
+                  console.log('m = '+flightInfo[k].m);
                   flightInfo[k].tanvalue = clacPlaneAngle(flightInfo[k].m);
+                  console.log('tanvalue = '+flightInfo[k].tanvalue);
+
                   
                   if(flightInfo[k].initLat > flightInfo[k].nextLat){
                     flightInfo[k].tanvalue = flightInfo[k].tanvalue + 180;
                   }
           
                   flightInfo[k].markerName = makeImageString(flightInfo[k].tanvalue-40);
+                  console.log('marker name = '+flightInfo[k].markerName);
             
                   icon = {
                     url: flightInfo[k].markerName,
@@ -321,30 +344,32 @@ function initMap() {
                   }
                   flightInfo[k].initLat =  flightInfo[k].nextLat;
                   flightInfo[k].initLng = flightInfo[k].nextLng;
-                  //console.log('initlat = '+flightInfo[k].initLat);
-                  //console.log('initlng = '+flightInfo[k].initLng);
+                  console.log('initlat = '+flightInfo[k].initLat);
+                  console.log('initlng = '+flightInfo[k].initLng);
           
                   // plane stopping
                   
                   var temp2 = gateWays.find((obj) => obj.label == flightInfo[k].route[flightInfo[k].count]);
-                  //console.log('temp2 = '+temp2.label);
+                  console.log('temp2 = '+temp2.label);
     
                   flightInfo[k].nextLat = temp2.lat;
                   flightInfo[k].nextLng = temp2.lng;
-                  //console.log('nextlat = '+flightInfo[k].nextLat);
-                  //console.log('nextlng = '+flightInfo[k].nextLng);
+                  console.log('nextlat = '+flightInfo[k].nextLat);
+                  console.log('nextlng = '+flightInfo[k].nextLng);
             
                   // calculate the new gradient and intercept of the next journey
                   flightInfo[k].m = calcGradient(flightInfo[k].initLng, flightInfo[k].initLat,flightInfo[k].nextLng, flightInfo[k].nextLat)
                   flightInfo[k].c = calcIntercept(flightInfo[k].nextLng, flightInfo[k].nextLat, flightInfo[k].m);
             
                   flightInfo[k].tanvalue = clacPlaneAngle(flightInfo[k].m);
+                  console.log('tanvalue = '+flightInfo[k].tanvalue);
                   
                   if(flightInfo[k].initLat >  flightInfo[k].nextLat){
                     flightInfo[k].tanvalue = flightInfo[k].tanvalue + 180;
                   }
           
                   flightInfo[k].markerName = makeImageString(flightInfo[k].tanvalue-40);
+                  console.log('marker name = '+flightInfo[k].markerName);
             
                   icon = {
                     url: flightInfo[k].markerName,
@@ -362,15 +387,31 @@ function initMap() {
               }
             }
           }
-          for(let p = 0; p < flightInfo.length; p++){
-            for(let pInner = 0; pInner < flightInfo.length; pInner++){
+          compArr = flightInfo.slice();
+          //console.log(flightInfo);
+          for(let p = 0; p < compArr.length; p++){
+            for(let pInner = 0; pInner < compArr.length; pInner++){
               if(p == pInner){
                 continue;
               }
-              let distance = google.maps.geometry.spherical.computeDistanceBetween(flightInfo[p].marker.position, flightInfo[pInner].marker.position);
+              let distance = google.maps.geometry.spherical.computeDistanceBetween(compArr[p].marker.position, compArr[pInner].marker.position);
               if (distance < radius) {
                   // markers are colliding
-                  //console.log(flightInfo[p].callsign+' colllides with '+flightInfo[pInner].callsign);
+                  //console.log(compArr[p].callsign+' colllides with '+compArr[pInner].callsign);
+                  table = document.getElementById('collision-table');
+                  // Create a new row for the table
+                  var newRow = table.insertRow();
+                  cell1 = newRow.insertCell(0);
+                  cell2 = newRow.insertCell(1);
+                  cell3 = newRow.insertCell(2);
+                  // Populate the cells with the data for the new record
+                  cell1.innerHTML = compArr[p].callsign;
+                  cell2.innerHTML = compArr[pInner].callsign;
+                  cell3.innerHTML = "Time";
+                  compArr.splice(pInner, 1);
+                  pInner--;
+
+                  //console.log(flightInfo);
               } 
             }
           }
@@ -380,5 +421,5 @@ function initMap() {
 
 }
 
-window.initMap = initMap;
+//window.initMap = initMap;
 
