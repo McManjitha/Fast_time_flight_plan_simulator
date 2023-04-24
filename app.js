@@ -50,9 +50,9 @@ const WayPointSchema = new mongoose.Schema({
       type: Number,
       default: 0
     }
-  }, { collection: 'WayPoints' });
+  }, { collection: 'WayPoints_100' });
 
-  const WayPoint = mongoose.model('WayPoint', WayPointSchema);
+  const WayPoint = mongoose.model('WayPoints_100', WayPointSchema);
 
 const PlaneShcema = new mongoose.Schema({
   Callsign : {
@@ -74,9 +74,9 @@ const PlaneShcema = new mongoose.Schema({
   Departure_Time : {
     type : String
   }
-}, {collection : 'plane_times'});
+}, {collection : 'plane_data100'});
 
-const Planes = new mongoose.model('plane_times', PlaneShcema);
+const Planes = new mongoose.model('plane_data100', PlaneShcema);
 
  
 
@@ -84,8 +84,8 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '/index.html'));
 })
 
-const Collection1 = mongoose.model('Waypoint', WayPointSchema);
-const Collection2 = mongoose.model('plane_times', PlaneShcema);
+const Collection1 = mongoose.model('WayPoints_100', WayPointSchema);
+const Collection2 = mongoose.model('plane_data100', PlaneShcema);
 
 
 // Create WebSocket server
@@ -104,31 +104,6 @@ wss.on('connection', (ws) => {
     console.error(err);
   });
 
-  /*Planes.find()
-  .then((planes) => {
-
-    planes.forEach((doc) => {
-      planeList.push(doc);
-    })
-    ws.send(JSON.stringify(planeList));
-
-  }).catch((error) => {
-    console.log('Error retrieving documents from collection Plane_data', error);
-  });
-
-  console.log(planeList);
-
-  WayPoint.find()
-  .then((waypoints) => {
-
-    waypoints.forEach((doc) => {
-      waypointList.push(doc);
-    })
-    //console.log(waypointList);
-    //ws.send(JSON.stringify(waypointList));
-  }).catch((error) => {
-    console.log('Error retrieving documents from collection Waypoints', error);
-  });*/
   
 });
 

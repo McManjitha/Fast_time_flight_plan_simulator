@@ -7,16 +7,38 @@
     height: 20px;
 }
 
- #map {
-    height: 700px;
-  }
+#map {
+  height: 700px;
+}
   
   /* 
    * Optional: Makes the sample page fill the window. 
    */
-  /*html,*/
-  body {
-    height: 100%;
-    margin: 0;
-    padding: 0;
-  }
+/*html,*/
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.styled-table {
+    border-collapse: collapse;
+    margin: 25px 0;
+    font-size: 0.9em;
+    font-family: sans-serif;
+    min-width: 400px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+    margin-left: 100px;
+    margin-bottom: 150px;
+}
+
+.styled-table thead tr {
+  background-color: #0b064f;
+  color: #ffffff;
+  text-align: left;
+}
+
+.map1{
+  margin-top: 50px;
+}
+
