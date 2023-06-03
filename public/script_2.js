@@ -1,4 +1,22 @@
 
+function createCircle(lt, lg){
+  var circle = new google.maps.Circle({
+    strokeColor: "#FF0000", // Set the stroke color of the circle
+    strokeOpacity: 0.8, // Set the stroke opacity
+    strokeWeight: 2, // Set the stroke weight
+    fillColor: "#FF0000", // Set the fill color of the circle
+    fillOpacity: 0.35, // Set the fill opacity
+    map: map, // Set the map instance
+    center: { lat: lt,  lng: lg }, // Set the center coordinates
+    radius: 20000, // Set the radius in meters
+    visibility : true,
+    count : 0
+  });
+  return circle;
+}
+
+
+
 // calculate the gradient of the straight line path
 function calcGradient(x1, y1, x2, y2){
   var gradient = (y2 - y1)/(x2 - x1);
@@ -26,6 +44,7 @@ function createMarker(coordinates, label){
   })
   return marker;
 }
+
 
 // calculate the angle of the plane marker according to the path in degrees
 function clacPlaneAngle(tanVal){
@@ -96,7 +115,7 @@ function rearrangeArray(inputString){
 function compareTime(inputTime, name) {
   // Split the input time string into hours, minutes, and seconds
   //console.log('input time = '+inputTime);
-  const [inputHours, inputMinutes, inputSeconds] = inputTime.split(':').map(Number);
+  const [inputHours, inputMinutes, inputSeconds] = inputTime.split('.').map(Number);
 
   // Get the current local machine time as hours, minutes, and seconds
   const localDate = new Date();
@@ -120,9 +139,10 @@ function compareTime(inputTime, name) {
     (inputHours === localHours && inputMinutes === localMinutes && inputSeconds > localSeconds)) {
     //console.log();
     return false; //inputTime is greater than current local time
-  } else if((inputHours === localHours && inputMinutes === localMinutes && inputSeconds < localSeconds) ||
-            (inputHours === localHours && inputMinutes === localMinutes && inputSeconds === localSeconds) ||
-            (inputHours === localHours && inputMinutes <= numMins)) {
+  } else if((inputHours === localHours && inputMinutes === localMinutes && inputSeconds > (localSeconds-5)) ||
+            (inputHours === localHours && inputMinutes === localMinutes && inputSeconds === localSeconds)) {
+            //(inputHours === localHours && inputMinutes >= numMins)) {
     return true; //inputTime is less than or equal to current local time
   }
 }
+
