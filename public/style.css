@@ -26,7 +26,7 @@ body {
     margin: 25px 0;
     font-size: 0.9em;
     font-family: sans-serif;
-    min-width: 400px;
+    min-width: 250px;
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
     margin-left: 100px;
     margin-bottom: 150px;
@@ -40,5 +40,19 @@ body {
 
 .map1{
   margin-top: 50px;
+}
+
+.circle {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  background-color: red;
+  border-radius: 50%;
+  opacity: 0.8;
+  animation: blink 1s infinite;
+}
+
+.hidden {
+  opacity: 0;
 }
 
