@@ -33,7 +33,10 @@ mongoose.connect('mongodb://127.0.0.1:27017/FlightSimulator',
   }
 ).then(() => {
   console.log('Connected to MongoDB');
-}).catch((error) => {
+  
+})
+
+.catch((error) => {
   console.log('Error connecting to MongoDB', error);
 });
 
@@ -74,9 +77,9 @@ const PlaneShcema = new mongoose.Schema({
   Departure_Time : {
     type : String
   }
-}, {collection : 'plane_data100_24'});
+}, {collection : '13-14'});
 
-const Planes = new mongoose.model('plane_data100_24', PlaneShcema);
+const Planes = new mongoose.model('13-14', PlaneShcema);
 
  
 
@@ -85,7 +88,7 @@ app.get('/', (req, res) => {
 })
 
 const Collection1 = mongoose.model('WayPoints_100', WayPointSchema);
-const Collection2 = mongoose.model('plane_data100_24', PlaneShcema);
+const Collection2 = mongoose.model('13-14', PlaneShcema);
 
 
 // Create WebSocket server
