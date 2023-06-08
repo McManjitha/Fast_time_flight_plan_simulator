@@ -29,7 +29,8 @@ socket.onmessage = (event) => {
   const collection1 = data.collection1;
   const collection2 = data.collection2;
 
-  //console.log("collection 1 = "+collection1);
+  //console.log("collection 2 = ");
+  //console.log(collection2);
 
   // Map the objects in the array to a new array of objects with the desired attributes
   gateWays = collection1.map((obj) => {
