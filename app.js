@@ -5,6 +5,7 @@ const bodyParser = require('body-parser');
 const session = require('express-session');
 const path = require('path');
 const WebSocket = require('ws');
+const { log } = require('console');
 
 
 const app = express();
@@ -35,7 +36,6 @@ mongoose.connect('mongodb://127.0.0.1:27017/FlightSimulator',
   console.log('Connected to MongoDB');
   
 })
-
 .catch((error) => {
   console.log('Error connecting to MongoDB', error);
 });
@@ -81,15 +81,29 @@ const PlaneShcema = new mongoose.Schema({
 
 const Planes = new mongoose.model('13-14', PlaneShcema);
 
- 
+const Collection1 = mongoose.model('WayPoints_100', WayPointSchema);
+const Collection2 = mongoose.model('13-14', PlaneShcema);
+
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '/index.html'));
 })
 
-const Collection1 = mongoose.model('WayPoints_100', WayPointSchema);
-const Collection2 = mongoose.model('13-14', PlaneShcema);
-
+app.get('/data', (req, res) => {
+  // Process the request and fetch data from the database
+  console.log("Request received");
+  const timeData = req.query.time;
+  const collection3 = mongoose.model(timeData, PlaneShcema);
+  Promise.all([data.find().exec()])
+  .then((doc3) =>{
+    const data = {collection3 : doc3};
+    res.send(JSON.stringify(data));
+  }).catch((errr) => {
+    console.error(errr);
+  });
+  // Send the response
+  //res.json(data);
+});
 
 // Create WebSocket server
 const wss = new WebSocket.Server({ server });
@@ -106,8 +120,6 @@ wss.on('connection', (ws) => {
   }).catch((err) => {
     console.error(err);
   });
-
-  
 });
 
 
