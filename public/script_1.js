@@ -16,12 +16,11 @@ var radius = 5000; // minimum separation between two planes
 var compArr = []; // array that temporily stores the flight data for collision detection
 var table; //collision-table
 var cell1, cell2, cell3; // cells of the collision table
-var allFlights_1 = [];
 var collidedPoints = [];
 
 //---------------------------------------------------------------------
 
-socket.onmessage = (event) => {
+/*socket.onmessage = (event) => {
 
   const data = JSON.parse(event.data);
 
@@ -70,7 +69,100 @@ socket.onmessage = (event) => {
       };
   });
   
-};
+};*/
+
+// sends a get request to fetch waypoint data
+function getWaypoints(){
+  const xhr1 = new XMLHttpRequest();
+  xhr1.open('GET', '/wayPoints', true);
+  xhr1.setRequestHeader('Content-Type', 'application/json');
+
+  xhr1.onreadystatechange = function(){
+    if(xhr1.readyState === 4 && xhr1.status === 200){
+      const response = JSON.parse(xhr1.responseText);
+      // Map the objects in the array to a new array of objects with the desired attributes
+      gateWays = response.collection1.map((obj) => {
+        return {
+          lat: obj.Lat,
+          lng: obj.Lng,
+          label: obj.Node_name,
+          waypointMarker: null // stores the waypoint marker
+        };
+      });
+    } else {
+      console.error(xhr1.statusText);
+    }
+  }
+  xhr1.send();
+}
+
+getWaypoints();
+
+//send a get request to fetch the flight data at each hour
+function sendRequest() {
+  // Get the present hour
+  const now = new Date();
+  const presentHour = now.getHours();
+
+  // Calculate the next hour
+  const nextHour = (presentHour + 1) % 24;
+
+  // Create the string in the format "A-B"
+  const data = presentHour + '-' + nextHour;
+
+  // Perform your AJAX request here
+  const xhr = new XMLHttpRequest();
+  const url = '/data?time=' + encodeURIComponent(data); // Include the string as a query parameter
+  xhr.open('GET', url, true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === 4 && xhr.status === 200) {
+      const response = JSON.parse(xhr.responseText);
+      allFlights = response.collection2.map((obj) => {
+        return {
+          callsign: obj.Callsign,
+          route: rearrangeArray(obj.path[0]) ,                //array of waypoints
+          origin: obj.Origin_Info,
+          dest: obj.Destination_Info,
+          routing: obj.Routing,
+          initLat:null,
+          initLng:null,
+          nextLat:null,
+          nextLng:null,
+          lat:null,
+          lng : null,
+          m:null,
+          c:null,
+          markerName:null,
+          tanvalue:null,
+          count:1,
+          increment:0.05,
+          going : true,
+          departure_time : obj.Departure_Time,
+          marker : null
+        };
+    });
+    } else {
+      console.error(xhr.statusText);
+    }
+  };
+  xhr.send();
+}
+
+//initializing the ajax request every hour and 
+function scheduleRequest() {
+  const now = new Date();
+  const nextHour = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours() + 1, 0, 0);
+  const delay = nextHour - now;
+
+  sendRequest();
+  setTimeout(() => {
+    setInterval(sendRequest, 3600000); // Repeat every hour (in milliseconds)
+  }, delay);
+}
+scheduleRequest();
+
 
 let map;
 var intervalId1, intervalId2, intervalId3;
@@ -143,10 +235,7 @@ function initMap() {
       
     }
   }, 3000);
-  //console.log("allFlights = ");
-  //console.log(allFlights);
 
-  //console.log("allflights length = "+allFlights.length);
   //--------------------------------------------------------------------------------
   // pushing flights to the flightinfo array for the simulation - flightinfo contains the flights that fly
   intervalId2 = setInterval(function() {
@@ -158,8 +247,6 @@ function initMap() {
         m--;
       }
     }
-    console.log("flightInfo = ");
-    console.log(flightInfo);
   }, 7000);
 
   // create gate way markers
@@ -234,17 +321,12 @@ function initMap() {
                   // previous journey end gateway to initial gateway coordiates of the next journey
                   flightInfo[k].initLat =  flightInfo[k].nextLat;
                   flightInfo[k].initLng = flightInfo[k].nextLng;
-                  //console.log('initlat = '+flightInfo[k].initLat);
-                  //console.log('initlng = '+flightInfo[k].initLng);
                   // plane stopping
-                  //console.log('label name = '+flightInfo[k].route[flightInfo[k].count]);
 
                   var temp1 = gateWays.find((obj) => obj.label == flightInfo[k].route[flightInfo[k].count]);
                   //console.log('temp1 = '+temp1.label);
                   flightInfo[k].nextLat = temp1.lat;
                   flightInfo[k].nextLng = temp1.lng;
-                  //console.log('nextlat = '+flightInfo[k].nextLat);
-                  //console.log('nextlng = '+flightInfo[k].nextLng);
             
                   // calculate the new gradient and intercept of the next journey
                   flightInfo[k].m = calcGradient(flightInfo[k].initLng, flightInfo[k].initLat,flightInfo[k].nextLng, flightInfo[k].nextLat)
@@ -297,8 +379,6 @@ function initMap() {
                   }
                   flightInfo[k].initLat =  flightInfo[k].nextLat;
                   flightInfo[k].initLng = flightInfo[k].nextLng;
-                  //console.log('initlat = '+flightInfo[k].initLat);
-                  //console.log('initlng = '+flightInfo[k].initLng);
           
                   // plane stopping
                   
