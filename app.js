@@ -4,8 +4,7 @@ const router = express.Router();
 const bodyParser = require('body-parser');
 const session = require('express-session');
 const path = require('path');
-const WebSocket = require('ws');
-const { log } = require('console');
+const { log, error } = require('console');
 
 
 const app = express();
@@ -24,7 +23,7 @@ app.use(express.static(__dirname + '/public'));
 
 const server = app.listen(3000, () => {
     console.log('Server started');
-  });
+});
 
 
 mongoose.connect('mongodb://127.0.0.1:27017/FlightSimulator',
@@ -77,36 +76,53 @@ const PlaneShcema = new mongoose.Schema({
   Departure_Time : {
     type : String
   }
-}, {collection : '13-14'});
+});
+//{collection : '13-14'}
 
-const Planes = new mongoose.model('13-14', PlaneShcema);
+//const Planes = new mongoose.model('13-14', PlaneShcema);
 
-const Collection1 = mongoose.model('WayPoints_100', WayPointSchema);
-const Collection2 = mongoose.model('13-14', PlaneShcema);
+//const Collection1 = mongoose.model('WayPoints_100', WayPointSchema);
+//const Collection2 = mongoose.model('13-14', PlaneShcema);
 
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '/index.html'));
 })
 
-app.get('/data', (req, res) => {
-  // Process the request and fetch data from the database
-  console.log("Request received");
-  const timeData = req.query.time;
-  const collection3 = mongoose.model(timeData, PlaneShcema);
-  Promise.all([data.find().exec()])
-  .then((doc3) =>{
-    const data = {collection3 : doc3};
-    res.send(JSON.stringify(data));
-  }).catch((errr) => {
-    console.error(errr);
+// Handling the request for waypoints
+app.get('/wayPoints', (req, res) => {
+  const collection1 = mongoose.model('WayPoints_100', WayPointSchema);
+  Promise.all([collection1.find().exec()])
+  .then((doc1) => {
+    const data = {collection1: doc1[0]};
+    // sending the waypoints data
+    res.send(data);
+  }).catch((err) => {
+    console.error(err);
   });
-  // Send the response
-  //res.json(data);
 });
 
+// handling the request for the flight data
+app.get('/data', (req, res) => {
+  // Process the request and fetch data from the database
+  const timeData = req.query.time;
+  const collection2 = mongoose.model(timeData, PlaneShcema);
+  Promise.all([collection2.find().exec()])
+  .then((doc2) =>{
+    const data = {collection2: doc2[0]};
+    res.send(JSON.stringify(data));
+  }).catch((err) => {
+    console.error(err);
+  });
+});
+
+/*app.get('/wayPoints', (req, res) =>{
+  const Collection1 = mongoose.model('WayPoints_100', WayPointSchema);
+
+})*/
+
 // Create WebSocket server
-const wss = new WebSocket.Server({ server });
+/*const wss = new WebSocket.Server({ server });
 
 wss.on('connection', (ws) => {
   console.log('WebSocket connected');
@@ -120,6 +136,6 @@ wss.on('connection', (ws) => {
   }).catch((err) => {
     console.error(err);
   });
-});
+});*/
 
 
