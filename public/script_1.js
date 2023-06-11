@@ -1,8 +1,3 @@
-//const waypoints = require("./app");
-
-
-const socket = new WebSocket('ws://localhost:3000');
-
 
 //------------------ variables --------------------------------------
 var gateWays = []; // contain waypoints
@@ -17,6 +12,122 @@ var compArr = []; // array that temporily stores the flight data for collision d
 var table; //collision-table
 var cell1, cell2, cell3; // cells of the collision table
 var collidedPoints = [];
+let circles = [];
+let blinkTimers = [];
+let count = 0;
+let current_hour;
+
+function firstRequest() {
+  // Get the present hour
+  console.log("Inside sendrequest");
+  const now = new Date();
+  const presentHour = now.getHours();
+  current_hour = presentHour;
+  console.log("current hour = "+current_hour);
+
+  // Calculate the next hour
+  const nextHour = (presentHour + 1) % 24;
+
+  // Create the string in the format "A-B"
+  const data = presentHour + '-' + nextHour;
+
+  // Perform your AJAX request here
+  const xhr = new XMLHttpRequest();
+  const url = '/data?time=' + encodeURIComponent(data); // Include the string as a query parameter
+  xhr.open('GET', url, true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === 4 && xhr.status === 200) {
+      allFlights = [];
+      console.log("response recieved");
+      const response = JSON.parse(xhr.responseText);
+      allFlights = response.collection2.map((obj) => {
+        return {
+          callsign: obj.Callsign,
+          route: rearrangeArray(obj.path[0]) ,                //array of waypoints
+          origin: obj.Origin_Info,
+          dest: obj.Destination_Info,
+          routing: obj.Routing,
+          initLat:null,
+          initLng:null,
+          nextLat:null,
+          nextLng:null,
+          lat:null,
+          lng : null,
+          m:null,
+          c:null,
+          markerName:null,
+          tanvalue:null,
+          count:1,
+          increment:0.05,
+          going : true,
+          departure_time : obj.Departure_Time,
+          marker : null
+        };
+    });
+    } else {
+      console.error(xhr.statusText);
+    }
+  };
+  xhr.send();
+}
+
+function sendRequest() {
+  // Get the present hour
+  console.log("Inside sendrequest");
+  const now = new Date();
+  //const presentHour = now.getHours();
+  console.log("current hour = "+current_hour);
+
+  // Calculate the next hour
+  const nextHour = (current_hour + 2) % 24;
+
+  // Create the string in the format "A-B"
+  const data = (current_hour+1) + '-' + nextHour;
+  current_hour = nextHour;
+
+  // Perform your AJAX request here
+  const xhr = new XMLHttpRequest();
+  const url = '/data?time=' + encodeURIComponent(data); // Include the string as a query parameter
+  xhr.open('GET', url, true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === 4 && xhr.status === 200) {
+      allFlights = [];
+      console.log("response recieved");
+      const response = JSON.parse(xhr.responseText);
+      allFlights = response.collection2.map((obj) => {
+        return {
+          callsign: obj.Callsign,
+          route: rearrangeArray(obj.path[0]) ,                //array of waypoints
+          origin: obj.Origin_Info,
+          dest: obj.Destination_Info,
+          routing: obj.Routing,
+          initLat:null,
+          initLng:null,
+          nextLat:null,
+          nextLng:null,
+          lat:null,
+          lng : null,
+          m:null,
+          c:null,
+          markerName:null,
+          tanvalue:null,
+          count:1,
+          increment:0.05,
+          going : true,
+          departure_time : obj.Departure_Time,
+          marker : null
+        };
+    });
+    } else {
+      console.error(xhr.statusText);
+    }
+  };
+  xhr.send();
+}
 
 //---------------------------------------------------------------------
 
@@ -98,57 +209,7 @@ function getWaypoints(){
 
 getWaypoints();
 
-//send a get request to fetch the flight data at each hour
-function sendRequest() {
-  // Get the present hour
-  const now = new Date();
-  const presentHour = now.getHours();
 
-  // Calculate the next hour
-  const nextHour = (presentHour + 1) % 24;
-
-  // Create the string in the format "A-B"
-  const data = presentHour + '-' + nextHour;
-
-  // Perform your AJAX request here
-  const xhr = new XMLHttpRequest();
-  const url = '/data?time=' + encodeURIComponent(data); // Include the string as a query parameter
-  xhr.open('GET', url, true);
-  xhr.setRequestHeader('Content-Type', 'application/json');
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4 && xhr.status === 200) {
-      const response = JSON.parse(xhr.responseText);
-      allFlights = response.collection2.map((obj) => {
-        return {
-          callsign: obj.Callsign,
-          route: rearrangeArray(obj.path[0]) ,                //array of waypoints
-          origin: obj.Origin_Info,
-          dest: obj.Destination_Info,
-          routing: obj.Routing,
-          initLat:null,
-          initLng:null,
-          nextLat:null,
-          nextLng:null,
-          lat:null,
-          lng : null,
-          m:null,
-          c:null,
-          markerName:null,
-          tanvalue:null,
-          count:1,
-          increment:0.05,
-          going : true,
-          departure_time : obj.Departure_Time,
-          marker : null
-        };
-    });
-    } else {
-      console.error(xhr.statusText);
-    }
-  };
-  xhr.send();
-}
 
 //initializing the ajax request every hour and 
 function scheduleRequest() {
@@ -156,9 +217,11 @@ function scheduleRequest() {
   const nextHour = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours() + 1, 0, 0);
   const delay = nextHour - now;
 
-  sendRequest();
+  firstRequest();
   setTimeout(() => {
-    setInterval(sendRequest, 3600000); // Repeat every hour (in milliseconds)
+    console.log("fetching time reached");
+    //sendRequest();
+    setInterval(sendRequest(), 3600000); // Repeat every hour (in milliseconds)
   }, delay);
 }
 scheduleRequest();
@@ -247,6 +310,8 @@ function initMap() {
         m--;
       }
     }
+    console.log("allFlights = ");
+    console.log(allFlights);
   }, 7000);
 
   // create gate way markers
@@ -435,7 +500,8 @@ function initMap() {
               if (distance < radius) {
                 
                 //collidedFlights.push(compArr[pInner]);
-                collidedPoints.push(createCircle(compArr[p].lat, compArr[p].lng));
+                //collidedPoints.push(createCircle(compArr[p].lat, compArr[p].lng));
+                blinkCircle(compArr[p].marker.position.lat(), compArr[p].marker.position.lng());
 
                 const localDate = new Date();
                 const localHours = localDate.getHours();
@@ -467,20 +533,20 @@ function initMap() {
       }, 1000);
   }, 2000);
 
-  intervalId3 = setInterval(function() {
+  /*intervalId3 = setInterval(function() {
     if(collidedPoints.length){
       for(let point = 0; point < collidedPoints.length; point++){
         var status = collidedPoints[point].visibility;
         status = !status;
         collidedPoints[point].setVisible(status);
         collidedPoints[point].count++;
-        /*if(collidedPoints[point].count > 20){
+        if(collidedPoints[point].count > 20){
           collidedPoints[point].setVisible(false);
           collidedPoints.splice(point, 1);
-        }*/
+        }
       }
     }
-  }, 500);
+  }, 500);*/
 
 }
 
