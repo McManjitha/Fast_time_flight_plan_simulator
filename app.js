@@ -5,7 +5,7 @@ const bodyParser = require('body-parser');
 const session = require('express-session');
 const path = require('path');
 const { log, error } = require('console');
-
+let count = 0;
 
 const app = express();
 
@@ -105,10 +105,15 @@ app.get('/wayPoints', (req, res) => {
 // handling the request for the flight data
 app.get('/data', (req, res) => {
   // Process the request and fetch data from the database
+  console.log("Plane fetch request received"+count);
+  count++;
   const timeData = req.query.time;
+  console.log("time collection "+timeData);
   const collection2 = mongoose.model(timeData, PlaneShcema);
   Promise.all([collection2.find().exec()])
   .then((doc2) =>{
+    console.log("doc2 = ");
+    console.log(doc2);
     const data = {collection2: doc2[0]};
     res.send(JSON.stringify(data));
   }).catch((err) => {
