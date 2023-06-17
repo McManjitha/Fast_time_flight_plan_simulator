@@ -1,3 +1,8 @@
+//send a get request to fetch the flight data at each hour
+
+
+
+
 
 function createCircle(lt, lg){
   var circle = new google.maps.Circle({
@@ -14,6 +19,51 @@ function createCircle(lt, lg){
   });
   return circle;
 }
+
+function blinkCircle(latitude, longitude) {
+  const center = new google.maps.LatLng(latitude, longitude);
+
+  // Create new circle
+  const circle = new google.maps.Circle({
+    strokeColor: "#FF0000",
+    strokeOpacity: 0.8,
+    strokeWeight: 2,
+    fillColor: "#FF0000",
+    fillOpacity: 0.35,
+    map: map,
+    center: center,
+    radius: 50000, // Adjust the radius as per your requirement
+  });
+
+  // Blink the circle for 5 seconds
+  let blinkCount = 0;
+  const blinkTimer = setInterval(() => {
+    if (blinkCount % 2 === 0) {
+      circle.setOptions({ fillOpacity: 0.35, strokeOpacity: 0.8 });
+    } else {
+      circle.setOptions({ fillOpacity: 0, strokeOpacity: 0 });
+    }
+    blinkCount++;
+
+    if (blinkCount > 10) {
+      clearInterval(blinkTimer);
+      // Remove the circle from the map
+      circle.setMap(null);
+
+      // Remove the circle and timer from the arrays
+      const index = circles.indexOf(circle);
+      if (index !== -1) {
+        circles.splice(index, 1);
+        blinkTimers.splice(index, 1);
+      }
+    }
+  }, 500);
+
+  // Add the circle and timer to the arrays
+  circles.push(circle);
+  blinkTimers.push(blinkTimer);
+}
+
 
 
 

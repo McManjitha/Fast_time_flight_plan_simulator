@@ -113,7 +113,7 @@ app.get('/data', (req, res) => {
   Promise.all([collection2.find().exec()])
   .then((doc2) =>{
     console.log("doc2 = ");
-    console.log(doc2);
+    //console.log(doc2);
     const data = {collection2: doc2[0]};
     res.send(JSON.stringify(data));
   }).catch((err) => {

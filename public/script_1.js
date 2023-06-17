@@ -16,20 +16,102 @@ let circles = [];
 let blinkTimers = [];
 let count = 0;
 let current_hour;
+let map;
+var intervalId1, intervalId2, intervalId3;
+var waypointList;
 
+// sends a get request to fetch waypoint data
+function getWaypoints(){
+  const xhr1 = new XMLHttpRequest();
+  xhr1.open('GET', '/wayPoints', true);
+  xhr1.setRequestHeader('Content-Type', 'application/json');
+
+  xhr1.onreadystatechange = function(){
+    if(xhr1.readyState === 4 && xhr1.status === 200){
+      const response = JSON.parse(xhr1.responseText);
+      // Map the objects in the array to a new array of objects with the desired attributes
+      gateWays = response.collection1.map((obj) => {
+        return {
+          lat: obj.Lat,
+          lng: obj.Lng,
+          label: obj.Node_name,
+          waypointMarker: null // stores the waypoint marker
+        };
+      });
+    } else {
+      console.error(xhr1.statusText);
+    }
+  }
+  xhr1.send();
+}
+
+function initializing(){
+  console.log("inside initializing");
+  for(var i = 0; i < allFlights.length; i++){
+    if(allFlights[i].going){
+
+      // Finding the waypoints of the first journey
+      firstLabel = allFlights[i].route[0];
+      secondLabel = allFlights[i].route[1];
+
+      // finding the origin of the airplane
+      firstWaypoint = gateWays.find((obj) => obj.label == firstLabel);
+      secondWaypoint = gateWays.find((obj) => obj.label == secondLabel);
+
+      // assigning initial and next coordinates 
+      allFlights[i].initLat = firstWaypoint.lat;
+      allFlights[i].initLng = firstWaypoint.lng;
+      allFlights[i].nextLat = secondWaypoint.lat;
+      allFlights[i].nextLng = secondWaypoint.lng;
+      //flightInfo[i].increment = 0.3; // temporily - this should be initialized using the speed.
+      //calculating initial gradient and intercept
+      allFlights[i].m = calcGradient(allFlights[i].initLng, allFlights[i].initLat, allFlights[i].nextLng, allFlights[i].nextLat);
+      allFlights[i].c = calcIntercept(allFlights[i].nextLng, allFlights[i].nextLat, allFlights[i].m);
+
+      allFlights[i].tanvalue = clacPlaneAngle(allFlights[i].m);
+      allFlights[i].markerName = initalString_2(allFlights[i].initLat, allFlights[i].initLng, allFlights[i].nextLat, allFlights[i].nextLng);
+      // calculating the initail increment
+      if(allFlights[i].initLng > allFlights[i].nextLng){
+        allFlights[i].increment = -1*Math.abs(allFlights[i].increment);
+      }else{
+        allFlights[i].increment = 1*Math.abs(allFlights[i].increment);
+      }
+        // creates the marker of the planes
+      const newMarker = new google.maps.Marker({
+        map: map,
+        position: { lat: allFlights[i].initLat, lng: allFlights[i].initLng },
+        icon : {
+          url: allFlights[i].markerName,
+          scaledSize :  new google.maps.Size(20, 20)
+        },
+        /*label:{                           
+          text : allFlights[i].callsign,      
+          labelVisible : false                
+        },*/
+        setTitle : allFlights[i].callsign
+      });
+      allFlights[i].marker = newMarker;
+
+      allFlights[i].marker.addListener("click", function(){
+        console.log(this.setTitle);
+      })
+    }
+  }
+}
 function firstRequest() {
   // Get the present hour
-  console.log("Inside sendrequest");
+  console.log("Inside firstrequest");
   const now = new Date();
   const presentHour = now.getHours();
   current_hour = presentHour;
-  console.log("current hour = "+current_hour);
+  console.log("current hour = "+presentHour);
 
   // Calculate the next hour
   const nextHour = (presentHour + 1) % 24;
+  console.log("next hour = "+nextHour);
 
   // Create the string in the format "A-B"
-  const data = presentHour + '-' + nextHour;
+  const data = current_hour + '-' + nextHour;
 
   // Perform your AJAX request here
   const xhr = new XMLHttpRequest();
@@ -66,6 +148,8 @@ function firstRequest() {
           marker : null
         };
     });
+    initializing();
+
     } else {
       console.error(xhr.statusText);
     }
@@ -76,15 +160,16 @@ function firstRequest() {
 function sendRequest() {
   // Get the present hour
   console.log("Inside sendrequest");
-  const now = new Date();
-  //const presentHour = now.getHours();
+  current_hour++;
   console.log("current hour = "+current_hour);
+  console.log("test");
 
   // Calculate the next hour
-  const nextHour = (current_hour + 2) % 24;
+  const nextHour = (current_hour + 1) % 24;
+  console.log("Next hour = "+nextHour);
 
   // Create the string in the format "A-B"
-  const data = (current_hour+1) + '-' + nextHour;
+  const data = current_hour + '-' + nextHour;
   current_hour = nextHour;
 
   // Perform your AJAX request here
@@ -122,6 +207,7 @@ function sendRequest() {
           marker : null
         };
     });
+    initializing();
     } else {
       console.error(xhr.statusText);
     }
@@ -129,109 +215,23 @@ function sendRequest() {
   xhr.send();
 }
 
-//---------------------------------------------------------------------
-
-/*socket.onmessage = (event) => {
-
-  const data = JSON.parse(event.data);
-
-  // Extract the array of objects from collection1
-  const collection1 = data.collection1;
-  const collection2 = data.collection2;
-
-  //console.log("collection 2 = ");
-  //console.log(collection2);
-
-  // Map the objects in the array to a new array of objects with the desired attributes
-  gateWays = collection1.map((obj) => {
-    return {
-      lat: obj.Lat,
-      lng: obj.Lng,
-      label: obj.Node_name,
-      waypointMarker: null // stores the waypoint marker
-
-    };
-  }); 
-
-
-   // Map the objects in the array to a new array of objects with the desired attributes
-   allFlights = collection2.map((obj) => {
-      return {
-        callsign: obj.Callsign,
-        route: rearrangeArray(obj.path[0]) ,                //array of waypoints
-        origin: obj.Origin_Info,
-        dest: obj.Destination_Info,
-        routing: obj.Routing,
-        initLat:null,
-        initLng:null,
-        nextLat:null,
-        nextLng:null,
-        lat:null,
-        lng : null,
-        m:null,
-        c:null,
-        markerName:null,
-        tanvalue:null,
-        count:1,
-        increment:0.05,
-        going : true,
-        departure_time : obj.Departure_Time,
-        marker : null
-      };
-  });
-  
-};*/
-
-// sends a get request to fetch waypoint data
-function getWaypoints(){
-  const xhr1 = new XMLHttpRequest();
-  xhr1.open('GET', '/wayPoints', true);
-  xhr1.setRequestHeader('Content-Type', 'application/json');
-
-  xhr1.onreadystatechange = function(){
-    if(xhr1.readyState === 4 && xhr1.status === 200){
-      const response = JSON.parse(xhr1.responseText);
-      // Map the objects in the array to a new array of objects with the desired attributes
-      gateWays = response.collection1.map((obj) => {
-        return {
-          lat: obj.Lat,
-          lng: obj.Lng,
-          label: obj.Node_name,
-          waypointMarker: null // stores the waypoint marker
-        };
-      });
-    } else {
-      console.error(xhr1.statusText);
-    }
-  }
-  xhr1.send();
-}
-
-getWaypoints();
-
-
-
 //initializing the ajax request every hour and 
 function scheduleRequest() {
+  console.log("inside scheduleRequest");
   const now = new Date();
   const nextHour = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours() + 1, 0, 0);
   const delay = nextHour - now;
-
+  console.log("Delay = "+(delay/1000)+" s");
   firstRequest();
   setTimeout(() => {
     console.log("fetching time reached");
-    //sendRequest();
-    setInterval(sendRequest(), 3600000); // Repeat every hour (in milliseconds)
+    sendRequest();
+    setInterval(function() {
+      sendRequest();
+    }, 3600000); // Repeat every hour (in milliseconds)
   }, delay);
 }
-scheduleRequest();
 
-
-let map;
-var intervalId1, intervalId2, intervalId3;
-var waypointList;
-
-  
 function initMap() {
   // Initialize the map
   map = new google.maps.Map(document.getElementById("map"), {
@@ -240,64 +240,9 @@ function initMap() {
     maxZoom: 15,
     minZoom: 5
   });
-  
-  setTimeout(function() {
-//---------------------------Iniatial assigning-------------------------------
-    for(var i = 0; i < allFlights.length; i++){
-      if(allFlights[i].going){
 
-        // Finding the waypoints of the first journey
-        firstLabel = allFlights[i].route[0];
-        secondLabel = allFlights[i].route[1];
-
-        // finding the origin of the airplane
-        firstWaypoint = gateWays.find((obj) => obj.label == firstLabel);
-        secondWaypoint = gateWays.find((obj) => obj.label == secondLabel);
-
-        // assigning initial and next coordinates 
-        allFlights[i].initLat = firstWaypoint.lat;
-        allFlights[i].initLng = firstWaypoint.lng;
-        allFlights[i].nextLat = secondWaypoint.lat;
-        allFlights[i].nextLng = secondWaypoint.lng;
-        //flightInfo[i].increment = 0.3; // temporily - this should be initialized using the speed.
-
-        //calculating initial gradient and intercept
-        allFlights[i].m = calcGradient(allFlights[i].initLng, allFlights[i].initLat, allFlights[i].nextLng, allFlights[i].nextLat);
-        allFlights[i].c = calcIntercept(allFlights[i].nextLng, allFlights[i].nextLat, allFlights[i].m);
-
-        allFlights[i].tanvalue = clacPlaneAngle(allFlights[i].m);
-        allFlights[i].markerName = initalString_2(allFlights[i].initLat, allFlights[i].initLng, allFlights[i].nextLat, allFlights[i].nextLng);
-
-        // calculating the initail increment
-        if(allFlights[i].initLng > allFlights[i].nextLng){
-          allFlights[i].increment = -1*Math.abs(allFlights[i].increment);
-        }else{
-          allFlights[i].increment = 1*Math.abs(allFlights[i].increment);
-        }
-
-          // creates the marker of the planes
-        const newMarker = new google.maps.Marker({
-          map: map,
-          position: { lat: allFlights[i].initLat, lng: allFlights[i].initLng },
-          icon : {
-            url: allFlights[i].markerName,
-            scaledSize :  new google.maps.Size(20, 20)
-          },
-          /*label:{                           
-            text : allFlights[i].callsign,      
-            labelVisible : false                
-          },*/
-          setTitle : allFlights[i].callsign
-        });
-        allFlights[i].marker = newMarker;
-
-        allFlights[i].marker.addListener("click", function(){
-          console.log(this.setTitle);
-        })
-      }
-      
-    }
-  }, 3000);
+  getWaypoints();
+  scheduleRequest();
 
   //--------------------------------------------------------------------------------
   // pushing flights to the flightinfo array for the simulation - flightinfo contains the flights that fly
@@ -310,8 +255,8 @@ function initMap() {
         m--;
       }
     }
-    console.log("allFlights = ");
-    console.log(allFlights);
+    console.log("flightInfo = ");
+    console.log(flightInfo);
   }, 7000);
 
   // create gate way markers
@@ -360,7 +305,15 @@ function initMap() {
         if(flightInfo.length > 0){
           for(var k = 0; k < flightInfo.length; k++){
             if(flightInfo[k].going){
-              flightInfo[k].lng = flightInfo[k].marker.getPosition().lng() + flightInfo[k].increment;
+              //flightInfo[k].lng = flightInfo[k].marker.getPosition().lng() + flightInfo[k].increment;
+              try {
+                flightInfo[k].lng = flightInfo[k].marker.getPosition().lng() + flightInfo[k].increment;
+              } catch (error) {
+                // Handle the error
+                console.log('An error occurred in flight '+flightInfo[k].callsign);
+                console.log(flightInfo[k].marker);
+                console.log(error);
+              }
               flightInfo[k].lat = flightInfo[k].lng*flightInfo[k].m + flightInfo[k].c;
               flightInfo[k].marker.setPosition({lat:flightInfo[k].lat, lng:flightInfo[k].lng});
             } 
@@ -372,10 +325,6 @@ function initMap() {
                   flightInfo[k].count = flightInfo[k].count + 1;
     
                   if(flightInfo[k].count >= flightInfo[k].route.length){
-                    //marker.setPosition({ lat: gateWays[ gateWays.length-1].lat, lng: gateWays[ gateWays.length-1].lng });
-                    //console.log('stop lat = '+flightInfo[k].nextLat);
-                    //console.log('stop lng = '+flightInfo[k].nextLng);
-    
                     flightInfo[k].marker.setPosition({lat : flightInfo[k].nextLat, lng : flightInfo[k].nextLng});
                     flightInfo[k].going = false;
                     flightInfo.splice(k, 1);
@@ -389,24 +338,22 @@ function initMap() {
                   // plane stopping
 
                   var temp1 = gateWays.find((obj) => obj.label == flightInfo[k].route[flightInfo[k].count]);
-                  //console.log('temp1 = '+temp1.label);
-                  flightInfo[k].nextLat = temp1.lat;
-                  flightInfo[k].nextLng = temp1.lng;
+                  try{
+                    flightInfo[k].nextLat = temp1.lat;
+                    flightInfo[k].nextLng = temp1.lng;
+                  }catch (error){
+                    console.log("Problem in the flight "+flightInfo[k].callsign);
+                    console.log(error);
+                  }
             
                   // calculate the new gradient and intercept of the next journey
                   flightInfo[k].m = calcGradient(flightInfo[k].initLng, flightInfo[k].initLat,flightInfo[k].nextLng, flightInfo[k].nextLat)
                   flightInfo[k].c = calcIntercept(flightInfo[k].nextLng, flightInfo[k].nextLat, flightInfo[k].m);
-                  //m = calcGradient(flightInfo[k].initLng, flightInfo[k].initLat, gateWays[flightInfo[k].count].lng, gateWays[flightInfo[k].count].lat);
-                  //c = calcIntercept(gateWays[count].lng, gateWays[count].lat, m);
-                  //console.log('m = '+flightInfo[k].m);
                   flightInfo[k].tanvalue = clacPlaneAngle(flightInfo[k].m);
-                  //console.log('tanvalue = '+flightInfo[k].tanvalue);
-
                   
                   if(flightInfo[k].initLat > flightInfo[k].nextLat){
                     flightInfo[k].tanvalue = flightInfo[k].tanvalue + 180;
                   }
-          
                   flightInfo[k].markerName = makeImageString(flightInfo[k].tanvalue-40);
                   //console.log('marker name = '+flightInfo[k].markerName);
             
@@ -431,8 +378,6 @@ function initMap() {
                   // Here, the plane reaches a destination gateway. Then it assign coordinates of the 
                   // previous journey end gateway to initial gateway coordiates of the next journey
                   flightInfo[k].count = flightInfo[k].count + 1;
-                  //console.log('count = '+flightInfo[k].count);
-                  //console.log('Limit-count = '+(flightInfo[k].route.length));
     
                   if(flightInfo[k].count >= flightInfo[k].route.length){
                     //marker.setPosition({ lat: gateWays[ gateWays.length-1].lat, lng: gateWays[ gateWays.length-1].lng });
@@ -446,14 +391,10 @@ function initMap() {
                   flightInfo[k].initLng = flightInfo[k].nextLng;
           
                   // plane stopping
-                  
                   var temp2 = gateWays.find((obj) => obj.label == flightInfo[k].route[flightInfo[k].count]);
-                  //console.log('temp2 = '+temp2.label);
     
                   flightInfo[k].nextLat = temp2.lat;
                   flightInfo[k].nextLng = temp2.lng;
-                  //console.log('nextlat = '+flightInfo[k].nextLat);
-                  //console.log('nextlng = '+flightInfo[k].nextLng);
             
                   // calculate the new gradient and intercept of the next journey
                   flightInfo[k].m = calcGradient(flightInfo[k].initLng, flightInfo[k].initLat,flightInfo[k].nextLng, flightInfo[k].nextLat)
@@ -498,9 +439,7 @@ function initMap() {
               }
               let distance = google.maps.geometry.spherical.computeDistanceBetween(compArr[p].marker.position, compArr[pInner].marker.position);
               if (distance < radius) {
-                
-                //collidedFlights.push(compArr[pInner]);
-                //collidedPoints.push(createCircle(compArr[p].lat, compArr[p].lng));
+
                 blinkCircle(compArr[p].marker.position.lat(), compArr[p].marker.position.lng());
 
                 const localDate = new Date();
@@ -533,22 +472,6 @@ function initMap() {
       }, 1000);
   }, 2000);
 
-  /*intervalId3 = setInterval(function() {
-    if(collidedPoints.length){
-      for(let point = 0; point < collidedPoints.length; point++){
-        var status = collidedPoints[point].visibility;
-        status = !status;
-        collidedPoints[point].setVisible(status);
-        collidedPoints[point].count++;
-        if(collidedPoints[point].count > 20){
-          collidedPoints[point].setVisible(false);
-          collidedPoints.splice(point, 1);
-        }
-      }
-    }
-  }, 500);*/
-
 }
 
-//window.initMap = initMap;
 
