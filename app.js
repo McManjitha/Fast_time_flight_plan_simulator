@@ -75,14 +75,26 @@ const PlaneShcema = new mongoose.Schema({
   },
   Departure_Time : {
     type : String
+  },
+  Aircraft_Type : {
+    type : String
+  },
+  Altitude : {
+    type : [String]
   }
 });
-//{collection : '13-14'}
 
-//const Planes = new mongoose.model('13-14', PlaneShcema);
-
-//const Collection1 = mongoose.model('WayPoints_100', WayPointSchema);
-//const Collection2 = mongoose.model('13-14', PlaneShcema);
+const altitudeSchema = new mongoose.Schema({
+  TakeOff_levels : {
+    type : String
+  },
+  Cruise_Levels : {
+    type : String
+  },
+  Decent_levels : {
+    type : String
+  }
+});
 
 
 app.get('/', (req, res) => {
@@ -96,6 +108,17 @@ app.get('/wayPoints', (req, res) => {
   .then((doc1) => {
     const data = {collection1: doc1[0]};
     // sending the waypoints data
+    res.send(data);
+  }).catch((err) => {
+    console.error(err);
+  });
+});
+
+app.get('/altitudes', (req, res) => {
+  const collection3 = mongoose.model('altitudes', altitudeSchema);
+  Promise.all([collection3.find().exec()])
+  .then((doc3) => {
+    const data = doc3[0][0];
     res.send(data);
   }).catch((err) => {
     console.error(err);

@@ -2,7 +2,7 @@
 //------------------ variables --------------------------------------
 var gateWays = []; // contain waypoints
 var allFlights = [];
-var flightInfo = []; // contain information about flights
+var flightInfo = [[], []]; // contain information about flights
 var firstWaypoint, secondWaypoint, firstLabel, secondLabel;
 var flightMarkers = []; // contain all the flight markers
 var currentFLight; // used in second setInterval
@@ -19,6 +19,9 @@ let current_hour;
 let map;
 var intervalId1, intervalId2, intervalId3;
 var waypointList;
+var altitudesArr = [[], [], []];
+let uniqueAltitudes = [];
+let namingObject = {};// contains the naming of the flightInfo array rows
 
 // sends a get request to fetch waypoint data
 function getWaypoints(){
@@ -30,14 +33,9 @@ function getWaypoints(){
     if(xhr1.readyState === 4 && xhr1.status === 200){
       const response = JSON.parse(xhr1.responseText);
       // Map the objects in the array to a new array of objects with the desired attributes
-      gateWays = response.collection1.map((obj) => {
-        return {
-          lat: obj.Lat,
-          lng: obj.Lng,
-          label: obj.Node_name,
-          waypointMarker: null // stores the waypoint marker
-        };
-      });
+      for(let i = 0; i < response.collection1.length; i++){
+        gateWays.push(new WayPoint(response.collection1[i]));
+      }
     } else {
       console.error(xhr1.statusText);
     }
@@ -45,59 +43,7 @@ function getWaypoints(){
   xhr1.send();
 }
 
-function initializing(){
-  console.log("inside initializing");
-  for(var i = 0; i < allFlights.length; i++){
-    if(allFlights[i].going){
 
-      // Finding the waypoints of the first journey
-      firstLabel = allFlights[i].route[0];
-      secondLabel = allFlights[i].route[1];
-
-      // finding the origin of the airplane
-      firstWaypoint = gateWays.find((obj) => obj.label == firstLabel);
-      secondWaypoint = gateWays.find((obj) => obj.label == secondLabel);
-
-      // assigning initial and next coordinates 
-      allFlights[i].initLat = firstWaypoint.lat;
-      allFlights[i].initLng = firstWaypoint.lng;
-      allFlights[i].nextLat = secondWaypoint.lat;
-      allFlights[i].nextLng = secondWaypoint.lng;
-      //flightInfo[i].increment = 0.3; // temporily - this should be initialized using the speed.
-      //calculating initial gradient and intercept
-      allFlights[i].m = calcGradient(allFlights[i].initLng, allFlights[i].initLat, allFlights[i].nextLng, allFlights[i].nextLat);
-      allFlights[i].c = calcIntercept(allFlights[i].nextLng, allFlights[i].nextLat, allFlights[i].m);
-
-      allFlights[i].tanvalue = clacPlaneAngle(allFlights[i].m);
-      allFlights[i].markerName = initalString_2(allFlights[i].initLat, allFlights[i].initLng, allFlights[i].nextLat, allFlights[i].nextLng);
-      // calculating the initail increment
-      if(allFlights[i].initLng > allFlights[i].nextLng){
-        allFlights[i].increment = -1*Math.abs(allFlights[i].increment);
-      }else{
-        allFlights[i].increment = 1*Math.abs(allFlights[i].increment);
-      }
-        // creates the marker of the planes
-      const newMarker = new google.maps.Marker({
-        map: map,
-        position: { lat: allFlights[i].initLat, lng: allFlights[i].initLng },
-        icon : {
-          url: allFlights[i].markerName,
-          scaledSize :  new google.maps.Size(20, 20)
-        },
-        /*label:{                           
-          text : allFlights[i].callsign,      
-          labelVisible : false                
-        },*/
-        setTitle : allFlights[i].callsign
-      });
-      allFlights[i].marker = newMarker;
-
-      allFlights[i].marker.addListener("click", function(){
-        console.log(this.setTitle);
-      })
-    }
-  }
-}
 function firstRequest() {
   // Get the present hour
   console.log("Inside firstrequest");
@@ -124,38 +70,19 @@ function firstRequest() {
       allFlights = [];
       console.log("response recieved");
       const response = JSON.parse(xhr.responseText);
-      allFlights = response.collection2.map((obj) => {
-        return {
-          callsign: obj.Callsign,
-          route: rearrangeArray(obj.path[0]) ,                //array of waypoints
-          origin: obj.Origin_Info,
-          dest: obj.Destination_Info,
-          routing: obj.Routing,
-          initLat:null,
-          initLng:null,
-          nextLat:null,
-          nextLng:null,
-          lat:null,
-          lng : null,
-          m:null,
-          c:null,
-          markerName:null,
-          tanvalue:null,
-          count:1,
-          increment:0.05,
-          going : true,
-          departure_time : obj.Departure_Time,
-          marker : null
-        };
-    });
-    initializing();
+      //console.log(response.collection2);
 
+      for(let i = 0; i < response.collection2.length; i++){
+        allFlights.push(new Flight(response.collection2[i]));
+        allFlights[i].initializing();
+      }
     } else {
       console.error(xhr.statusText);
     }
   };
   xhr.send();
 }
+
 
 function sendRequest() {
   // Get the present hour
@@ -183,37 +110,43 @@ function sendRequest() {
       allFlights = [];
       console.log("response recieved");
       const response = JSON.parse(xhr.responseText);
-      allFlights = response.collection2.map((obj) => {
-        return {
-          callsign: obj.Callsign,
-          route: rearrangeArray(obj.path[0]) ,                //array of waypoints
-          origin: obj.Origin_Info,
-          dest: obj.Destination_Info,
-          routing: obj.Routing,
-          initLat:null,
-          initLng:null,
-          nextLat:null,
-          nextLng:null,
-          lat:null,
-          lng : null,
-          m:null,
-          c:null,
-          markerName:null,
-          tanvalue:null,
-          count:1,
-          increment:0.05,
-          going : true,
-          departure_time : obj.Departure_Time,
-          marker : null
-        };
-    });
-    initializing();
+      for(let i = 0; i < response.collection2.length; i++){
+        allFlights.push(new Flight(response.collection2[i]));
+        allFlights[i].initializing();
+      }
     } else {
       console.error(xhr.statusText);
     }
   };
   xhr.send();
 }
+
+function getAltitudes(){
+  return new Promise(function(resolve, reject) {
+    const xhr2 = new XMLHttpRequest();
+    xhr2.open('GET', '/altitudes', true);
+    xhr2.setRequestHeader('Content-Type', 'application/json');
+
+    xhr2.onreadystatechange = function(){
+      if(xhr2.readyState === 4 && xhr2.status === 200){
+        const altitudes = JSON.parse(xhr2.responseText);
+        altitudesArr[0] = rearrangeArray(altitudes.TakeOff_levels);
+        altitudesArr[1] = rearrangeArray(altitudes.Cruise_Levels);
+        altitudesArr[2] = rearrangeArray(altitudes.Decent_levels);
+        
+        uniqueAltitudes = flattenAndRemoveDuplicates(altitudesArr);
+        console.log("uniqueAltitudes");
+        console.log(uniqueAltitudes);
+        resolve();
+        
+      }else{
+        console.error(xhr2.status);
+      }
+    }
+    xhr2.send();
+  });
+}
+
 
 //initializing the ajax request every hour and 
 function scheduleRequest() {
@@ -232,6 +165,47 @@ function scheduleRequest() {
   }, delay);
 }
 
+function collisionHandling(){
+  console.log('Inside collisionHandling');
+  //console.log(compArr);
+  for(let j = 0; j < compArr.length; j++){
+    //console.log("Inside for loop");
+    //console.log(compArr[j]);
+    while(compArr[j].length > 0){
+      let ob1 = compArr[j].shift();
+      //console.log(ob1);
+
+      for(let k = 0; k < compArr[j].length; k++){
+        let distance = google.maps.geometry.spherical.computeDistanceBetween(ob1.marker.position, compArr[j][k].marker.position);
+        if (distance < radius) {
+
+          blinkCircle(ob1.marker.position.lat(), ob1.marker.position.lng());
+          const localDate = new Date();
+          const localHours = localDate.getHours();
+          const localMinutes = localDate.getMinutes();
+          const localSeconds = localDate.getSeconds();
+          // markers are colliding
+          //console.log(compArr[p].callsign+' colllides with '+compArr[pInner].callsign);
+          table = document.getElementById('collision-table');
+          // Create a new row for the table
+          var newRow = table.insertRow();
+          cell1 = newRow.insertCell(0);
+          cell2 = newRow.insertCell(1);
+          cell3 = newRow.insertCell(2);
+          cell4 = newRow.insertCell(3);
+          cell5 = newRow.insertCell(4);
+          // Populate the cells with the data for the new record
+          cell1.innerHTML = ob1.callsign;
+          cell2.innerHTML = compArr[j][k].callsign;
+          cell3.innerHTML = localHours+":"+localMinutes+":"+localSeconds;
+          cell4.innerHTML = ob1.lat;
+          cell5.innerHTML = ob1.lng;
+        } 
+      }
+    }
+  }
+}
+
 function initMap() {
   // Initialize the map
   map = new google.maps.Map(document.getElementById("map"), {
@@ -240,24 +214,26 @@ function initMap() {
     maxZoom: 15,
     minZoom: 5
   });
+}
+
+async function namingflightInfo(){
+  try{
+    await getAltitudes();
+    for(let i = 0; i < uniqueAltitudes.length; i++){
+      flightInfo.push([]);
+      namingObject[uniqueAltitudes[i]] = i;
+    }
+  }catch(error){
+    console.error(error);
+  }
+}
+
+
+function main(){
 
   getWaypoints();
   scheduleRequest();
-
-  //--------------------------------------------------------------------------------
-  // pushing flights to the flightinfo array for the simulation - flightinfo contains the flights that fly
-  intervalId2 = setInterval(function() {
-    //console.log('flightInfo = '+flightInfo);
-    for(let m = 0; m < allFlights.length; m++){
-      if(compareTime(allFlights[m].departure_time, allFlights[m].callsign)){   
-        flightInfo.push(allFlights[m]);
-        allFlights.splice(m, 1);
-        m--;
-      }
-    }
-    console.log("flightInfo = ");
-    console.log(flightInfo);
-  }, 7000);
+  namingflightInfo();
 
   // create gate way markers
   setTimeout(function() {
@@ -270,6 +246,27 @@ function initMap() {
     }
   }, 3000)
 
+
+  //--------------------------------------------------------------------------------
+  // pushing flights to the flightinfo array for the simulation - flightinfo contains the flights that fly
+  intervalId2 = setInterval(function() {
+    //console.log('flightInfo = '+flightInfo);
+    for(let m = 0; m < allFlights.length; m++){
+      if(compareTime(allFlights[m].departure_time, allFlights[m].callsign)){ 
+        for(let j = 0; j < altitudesArr[0].length; j++){
+          if(allFlights[m].currentAltitude == altitudesArr[0][j]){
+            flightInfo[namingObject[altitudesArr[0][j]]].push(allFlights[m]);
+            allFlights.splice(m, 1);
+            m--;
+          }
+        }
+      }
+    }
+    console.log("flightInfo = ");
+    console.log(flightInfo);
+  }, 7000);
+
+  
   // this event listner listns to the changes of the zooming and adjust the size of the waypoints accordingly
   google.maps.event.addListener(map, 'zoom_changed', function() {
     var zoomLevel = map.getZoom();
@@ -302,175 +299,49 @@ function initMap() {
        // this repeats at 1000ms intervals and calculate the new location of the plane
       intervalId1 = setInterval(function() {
         // Get the new coordinates for the marker
-        if(flightInfo.length > 0){
-          for(var k = 0; k < flightInfo.length; k++){
-            if(flightInfo[k].going){
-              //flightInfo[k].lng = flightInfo[k].marker.getPosition().lng() + flightInfo[k].increment;
-              try {
-                flightInfo[k].lng = flightInfo[k].marker.getPosition().lng() + flightInfo[k].increment;
-              } catch (error) {
-                // Handle the error
-                console.log('An error occurred in flight '+flightInfo[k].callsign);
-                console.log(flightInfo[k].marker);
-                console.log(error);
-              }
-              flightInfo[k].lat = flightInfo[k].lng*flightInfo[k].m + flightInfo[k].c;
-              flightInfo[k].marker.setPosition({lat:flightInfo[k].lat, lng:flightInfo[k].lng});
-            } 
-            if(flightInfo[k].going){
-              // Going down the map
-              if(flightInfo[k].initLat > flightInfo[k].nextLat){
-                if( flightInfo[k].marker.getPosition().lat() < flightInfo[k].nextLat && flightInfo[k].count < flightInfo[k].route.length){
-    
-                  flightInfo[k].count = flightInfo[k].count + 1;
-    
-                  if(flightInfo[k].count >= flightInfo[k].route.length){
-                    flightInfo[k].marker.setPosition({lat : flightInfo[k].nextLat, lng : flightInfo[k].nextLng});
-                    flightInfo[k].going = false;
-                    flightInfo.splice(k, 1);
-    
-                    continue;
-                  }
-                  // Here, the plane reaches a destination gateway. Then it assign coordinates of the 
-                  // previous journey end gateway to initial gateway coordiates of the next journey
-                  flightInfo[k].initLat =  flightInfo[k].nextLat;
-                  flightInfo[k].initLng = flightInfo[k].nextLng;
-                  // plane stopping
+        for(let j = 0; j < flightInfo.length; j++){
+          if(flightInfo[j].length > 0){
+            for(var k = 0; k < flightInfo[j].length; k++){
+              flightInfo[j][k].incrementing();
+  
+              if(flightInfo[j][k].going){
+                // At this point the flight reaches a waypoint
+                if(flightInfo[j][k].initLat > flightInfo[j][k].nextLat){
+                  // Going down the map.
+                  if( flightInfo[j][k].marker.getPosition().lat() < flightInfo[j][k].nextLat && flightInfo[j][k].count < flightInfo[j][k].route.length){
+                    flightInfo[j][k].waypointChanging_down(j, k);
+                    // if(flightInfo[j][k].previousAltitude != flightInfo[j][k].currentAltitude){
+                    //   let arrayName = flightInfo[j][k].currentAltitude;
+                    //   let removedFlight = flightInfo[j].splice(k, 1);
+                    //   flightInfo[namingObject[arrayName]].push(removedFlight);
+                    //   k--;
+                    // }
 
-                  var temp1 = gateWays.find((obj) => obj.label == flightInfo[k].route[flightInfo[k].count]);
-                  try{
-                    flightInfo[k].nextLat = temp1.lat;
-                    flightInfo[k].nextLng = temp1.lng;
-                  }catch (error){
-                    console.log("Problem in the flight "+flightInfo[k].callsign);
-                    console.log(error);
                   }
-            
-                  // calculate the new gradient and intercept of the next journey
-                  flightInfo[k].m = calcGradient(flightInfo[k].initLng, flightInfo[k].initLat,flightInfo[k].nextLng, flightInfo[k].nextLat)
-                  flightInfo[k].c = calcIntercept(flightInfo[k].nextLng, flightInfo[k].nextLat, flightInfo[k].m);
-                  flightInfo[k].tanvalue = clacPlaneAngle(flightInfo[k].m);
-                  
-                  if(flightInfo[k].initLat > flightInfo[k].nextLat){
-                    flightInfo[k].tanvalue = flightInfo[k].tanvalue + 180;
-                  }
-                  flightInfo[k].markerName = makeImageString(flightInfo[k].tanvalue-40);
-                  //console.log('marker name = '+flightInfo[k].markerName);
-            
-                  icon = {
-                    url: flightInfo[k].markerName,
-                    scaledSize: new google.maps.Size(20, 20)
-                  };
-                  
-                  flightInfo[k].marker.setIcon(icon);
-                  //marker.setIcon(icon);
-                  // selecting the right increment whether negative or positive
-                  if(flightInfo[k].initLng > flightInfo[k].nextLng){
-                    flightInfo[k].increment = -1*Math.abs(flightInfo[k].increment);
-                  }else{
-                    flightInfo[k].increment = Math.abs(flightInfo[k].increment);
-                  }
-                }
-
-                //going up the map
-              }else if(flightInfo[k].initLat <   flightInfo[k].nextLat){
-                if( flightInfo[k].marker.getPosition().lat() > flightInfo[k].nextLat && flightInfo[k].count < flightInfo[k].route.length){
-                  // Here, the plane reaches a destination gateway. Then it assign coordinates of the 
-                  // previous journey end gateway to initial gateway coordiates of the next journey
-                  flightInfo[k].count = flightInfo[k].count + 1;
-    
-                  if(flightInfo[k].count >= flightInfo[k].route.length){
-                    //marker.setPosition({ lat: gateWays[ gateWays.length-1].lat, lng: gateWays[ gateWays.length-1].lng });
-                    flightInfo[k].marker.setPosition({lat : flightInfo[k].nextLat, lng : flightInfo[k].nextLng});
-                    flightInfo[k].going = false;
-                    flightInfo.splice(k, 1);
-                    //console.log('The End');
-                    continue;
-                  }
-                  flightInfo[k].initLat =  flightInfo[k].nextLat;
-                  flightInfo[k].initLng = flightInfo[k].nextLng;
-          
-                  // plane stopping
-                  var temp2 = gateWays.find((obj) => obj.label == flightInfo[k].route[flightInfo[k].count]);
-    
-                  flightInfo[k].nextLat = temp2.lat;
-                  flightInfo[k].nextLng = temp2.lng;
-            
-                  // calculate the new gradient and intercept of the next journey
-                  flightInfo[k].m = calcGradient(flightInfo[k].initLng, flightInfo[k].initLat,flightInfo[k].nextLng, flightInfo[k].nextLat)
-                  flightInfo[k].c = calcIntercept(flightInfo[k].nextLng, flightInfo[k].nextLat, flightInfo[k].m);
-            
-                  flightInfo[k].tanvalue = clacPlaneAngle(flightInfo[k].m);
-                  //console.log('tanvalue = '+flightInfo[k].tanvalue);
-                  
-                  if(flightInfo[k].initLat >  flightInfo[k].nextLat){
-                    flightInfo[k].tanvalue = flightInfo[k].tanvalue + 180;
-                  }
-          
-                  flightInfo[k].markerName = makeImageString(flightInfo[k].tanvalue-40);
-                  //console.log('marker name = '+flightInfo[k].markerName);
-            
-                  icon = {
-                    url: flightInfo[k].markerName,
-                    scaledSize: new google.maps.Size(20, 20)
-                  };
-      
-                  flightInfo[k].marker.setIcon(icon);
-                  // selecting the right increment whether negative or positive
-                  if(flightInfo[k].initLng > flightInfo[k].nextLng){
-                    flightInfo[k].increment = -1*Math.abs(flightInfo[k].increment);
-                  }else{
-                    flightInfo[k].increment = Math.abs(flightInfo[k].increment);
+                  //going up the map
+                }else if(flightInfo[j][k].initLat <   flightInfo[j][k].nextLat){
+                  if( flightInfo[j][k].marker.getPosition().lat() > flightInfo[j][k].nextLat && flightInfo[j][k].count < flightInfo[j][k].route.length){
+                    // Here, the plane reaches a destination gateway. Then it assign coordinates of the 
+                    // previous journey end gateway to initial gateway coordiates of the next journey
+                    flightInfo[j][k].waypointChanging_up(j, k);
+                    // if(flightInfo[j][k].previousAltitude != flightInfo[j][k].currentAltitude){
+                    //   let arrayName = flightInfo[j][k].currentAltitude;
+                    //   let removedFlight = flightInfo[j].splice(k, 1);
+                    //   flightInfo[namingObject[arrayName]].push(removedFlight);
+                    //   k--;
+                    // }
                   }
                 }
               }
-              // end of flight navigation
             }
+            // copying flight info to another array
+            compArr = Array.from(flightInfo, arr => [...arr]);
+            // collision handling
+            collisionHandling();
           }
-           
-          // copying flight info to another array
-          compArr = flightInfo.slice();
-
-          // collision handling______________________________________________________________________________
-          for(let p = 0; p < compArr.length; p++){
-            for(let pInner = 0; pInner < compArr.length; pInner++){
-              if(p == pInner){
-                continue;
-              }
-              let distance = google.maps.geometry.spherical.computeDistanceBetween(compArr[p].marker.position, compArr[pInner].marker.position);
-              if (distance < radius) {
-
-                blinkCircle(compArr[p].marker.position.lat(), compArr[p].marker.position.lng());
-
-                const localDate = new Date();
-                const localHours = localDate.getHours();
-                const localMinutes = localDate.getMinutes();
-                const localSeconds = localDate.getSeconds();
-                // markers are colliding
-                //console.log(compArr[p].callsign+' colllides with '+compArr[pInner].callsign);
-                table = document.getElementById('collision-table');
-                // Create a new row for the table
-                var newRow = table.insertRow();
-                cell1 = newRow.insertCell(0);
-                cell2 = newRow.insertCell(1);
-                cell3 = newRow.insertCell(2);
-                cell4 = newRow.insertCell(3);
-                cell5 = newRow.insertCell(4);
-                // Populate the cells with the data for the new record
-                cell1.innerHTML = compArr[p].callsign;
-                cell2.innerHTML = compArr[pInner].callsign;
-                cell3.innerHTML = localHours+":"+localMinutes+":"+localSeconds;
-                cell4.innerHTML = compArr[p].lat;
-                cell5.innerHTML = compArr[p].lng;
-                compArr.splice(pInner, 1);
-                pInner--;
-              } 
-            }
-          }
-          // collision handling ended ______________________________________________________________________________
         }
-      }, 1000);
-  }, 2000);
+      }, 2000);
+    }, 2000);
 
 }
 

@@ -21,6 +21,7 @@ function createCircle(lt, lg){
 }
 
 function blinkCircle(latitude, longitude) {
+  //console.log("Inside blink circle");
   const center = new google.maps.LatLng(latitude, longitude);
 
   // Create new circle
@@ -164,7 +165,6 @@ function rearrangeArray(inputString){
   
 function compareTime(inputTime, name) {
   // Split the input time string into hours, minutes, and seconds
-  //console.log('input time = '+inputTime);
   const [inputHours, inputMinutes, inputSeconds] = inputTime.split('.').map(Number);
 
   // Get the current local machine time as hours, minutes, and seconds
@@ -187,12 +187,33 @@ function compareTime(inputTime, name) {
   if (inputHours > localHours ||
     (inputHours === localHours && inputMinutes > localMinutes) ||
     (inputHours === localHours && inputMinutes === localMinutes && inputSeconds > localSeconds)) {
-    //console.log();
     return false; //inputTime is greater than current local time
-  } else if((inputHours === localHours && inputMinutes === localMinutes && inputSeconds > (localSeconds-5)) ||
+  } else if((inputHours === localHours && inputMinutes === localMinutes && inputSeconds > (localSeconds-8)) ||
             (inputHours === localHours && inputMinutes === localMinutes && inputSeconds === localSeconds)) {
+
             //(inputHours === localHours && inputMinutes >= numMins)) {
     return true; //inputTime is less than or equal to current local time
   }
+}
+
+function flattenAndRemoveDuplicates(array2D) {
+  // Flatten the 2D array
+  const flattenedArray = array2D.flat();
+
+  // Create a Set to store non-duplicated values
+  const uniqueValues = new Set();
+
+  // Create an array to store the final result
+  const result = [];
+
+  // Iterate over each value in the flattened array
+  for (const value of flattenedArray) {
+    // Add the value to the result array if it's not already present in the uniqueValues Set
+    if (!uniqueValues.has(value)) {
+      result.push(value);
+      uniqueValues.add(value);
+    }
+  }
+  return result;
 }
 
