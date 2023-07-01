@@ -234,6 +234,24 @@ function main(){
   getWaypoints();
   scheduleRequest();
   namingflightInfo();
+//  
+
+  // setTimeout(function(){
+  //   let ob1 =
+  //   {
+  //   "Callsign": "TR2466",
+  //   Departure_Time: "09.44.10",
+  //   "Destination Info": "WMKK",
+  //   "Origin Info": "WSSS",
+  //   Routing: "WSSS_WMKK",
+  //   "path": ["[WSSS,VTK,VJR,GUPTA,VKL,WMKK]"],
+  //   "Altitude": ["[7000,41000,41000,41000,41000,7000]"]
+  //   }
+
+  //   allFlights.push(new Flight(ob1));
+  //   allFlights[0].initializing();
+  // }, 4000)
+  
 
   // create gate way markers
   setTimeout(function() {
@@ -254,7 +272,9 @@ function main(){
     for(let m = 0; m < allFlights.length; m++){
       if(compareTime(allFlights[m].departure_time, allFlights[m].callsign)){ 
         for(let j = 0; j < altitudesArr[0].length; j++){
-          if(allFlights[m].currentAltitude == altitudesArr[0][j]){
+          //console.log("the flight");
+          //console.log(allFlights[m]);
+          if((allFlights.length > 0) && (allFlights[m].currentAltitude == altitudesArr[0][j])){
             flightInfo[namingObject[altitudesArr[0][j]]].push(allFlights[m]);
             allFlights.splice(m, 1);
             m--;
@@ -262,8 +282,13 @@ function main(){
         }
       }
     }
+    //console.log("allFlights = ");
+    //console.log(allFlights);
+
     console.log("flightInfo = ");
     console.log(flightInfo);
+    
+
   }, 7000);
 
   
@@ -295,54 +320,58 @@ function main(){
   });
 
   //-------------------------------------------------------------------------------------------
-    setTimeout(function() {
-       // this repeats at 1000ms intervals and calculate the new location of the plane
-      intervalId1 = setInterval(function() {
-        // Get the new coordinates for the marker
-        for(let j = 0; j < flightInfo.length; j++){
-          if(flightInfo[j].length > 0){
-            for(var k = 0; k < flightInfo[j].length; k++){
-              flightInfo[j][k].incrementing();
-  
-              if(flightInfo[j][k].going){
-                // At this point the flight reaches a waypoint
-                if(flightInfo[j][k].initLat > flightInfo[j][k].nextLat){
-                  // Going down the map.
-                  if( flightInfo[j][k].marker.getPosition().lat() < flightInfo[j][k].nextLat && flightInfo[j][k].count < flightInfo[j][k].route.length){
-                    flightInfo[j][k].waypointChanging_down(j, k);
-                    // if(flightInfo[j][k].previousAltitude != flightInfo[j][k].currentAltitude){
-                    //   let arrayName = flightInfo[j][k].currentAltitude;
-                    //   let removedFlight = flightInfo[j].splice(k, 1);
-                    //   flightInfo[namingObject[arrayName]].push(removedFlight);
-                    //   k--;
-                    // }
+  setTimeout(function() {
+      // this repeats at 1000ms intervals and calculate the new location of the plane
+    intervalId1 = setInterval(function() {
+      // Get the new coordinates for the marker
+      for(let j = 0; j < flightInfo.length; j++){ // iterate through flight levels
+        if(flightInfo[j].length > 0){
+          for(var k = 0; k < flightInfo[j].length; k++){
+            flightInfo[j][k].incrementing();
 
+            if(flightInfo[j][k].going){
+              // At this point the flight reaches a waypoint
+              if(flightInfo[j][k].initLat > flightInfo[j][k].nextLat){
+                // Going down the map.
+                if( flightInfo[j][k].marker.getPosition().lat() < flightInfo[j][k].nextLat && flightInfo[j][k].count < flightInfo[j][k].route.length){
+                  //let ret = flightInfo[j][k].waypointChanging_down(j, k);
+                  if(flightInfo[j][k].waypointChanging_down(j, k) && (flightInfo[j][k].previousAltitude != flightInfo[j][k].currentAltitude)){
+                    let arrayName = flightInfo[j][k].currentAltitude;
+                    let removedFlight = flightInfo[j].splice(k, 1);
+                    flightInfo[namingObject[arrayName]].push(removedFlight[0]);
+                    k--;
                   }
-                  //going up the map
-                }else if(flightInfo[j][k].initLat <   flightInfo[j][k].nextLat){
-                  if( flightInfo[j][k].marker.getPosition().lat() > flightInfo[j][k].nextLat && flightInfo[j][k].count < flightInfo[j][k].route.length){
-                    // Here, the plane reaches a destination gateway. Then it assign coordinates of the 
-                    // previous journey end gateway to initial gateway coordiates of the next journey
-                    flightInfo[j][k].waypointChanging_up(j, k);
-                    // if(flightInfo[j][k].previousAltitude != flightInfo[j][k].currentAltitude){
-                    //   let arrayName = flightInfo[j][k].currentAltitude;
-                    //   let removedFlight = flightInfo[j].splice(k, 1);
-                    //   flightInfo[namingObject[arrayName]].push(removedFlight);
-                    //   k--;
-                    // }
+
+                }
+                //going up the map
+              }else if(flightInfo[j][k].initLat <   flightInfo[j][k].nextLat){
+                if( flightInfo[j][k].marker.getPosition().lat() > flightInfo[j][k].nextLat && flightInfo[j][k].count < flightInfo[j][k].route.length){
+                  // Here, the plane reaches a destination gateway. Then it assign coordinates of the 
+                  // previous journey end gateway to initial gateway coordiates of the next journey
+                  //flightInfo[j][k].waypointChanging_up(j, k);
+                //   console.log("over up");
+                  if(flightInfo[j][k].waypointChanging_up(j, k) && (flightInfo[j][k].previousAltitude != flightInfo[j][k].currentAltitude)){
+                    let arrayName = flightInfo[j][k].currentAltitude;
+                    let removedFlight = flightInfo[j].splice(k, 1);
+                    flightInfo[namingObject[arrayName]].push(removedFlight[0]);
+                    k--;
+                    // console.log("if is good");
                   }
                 }
               }
             }
-            // copying flight info to another array
-            compArr = Array.from(flightInfo, arr => [...arr]);
-            // collision handling
-            collisionHandling();
-          }
-        }
-      }, 2000);
-    }, 2000);
 
+          }
+          // copying flight info to another array
+          compArr = Array.from(flightInfo, arr => [...arr]);
+          // collision handling
+          //collisionHandling();
+        }
+        
+      }
+    }, 2000);
+  }, 2000);
 }
+
 
 

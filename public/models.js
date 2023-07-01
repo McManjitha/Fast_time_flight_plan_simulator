@@ -59,8 +59,13 @@ class Flight{
     }
 
     initializing(){
+        //console.log(this);
+        //console.log(this.route[0]);
+        //console.log(gateWays);
         let firstWaypoint = gateWays.find((obj) => obj.label == this.route[0]);
         let secondWaypoint = gateWays.find((obj) => obj.label == this.route[1]);
+        //console.log('first waypoint = '+firstWaypoint);
+
 
         // assigning initial and next coordinates 
         this.initLat = firstWaypoint.lat;
@@ -88,6 +93,7 @@ class Flight{
     }
 
     incrementing(){
+        //console.log("inside incrementing");
         this.lng = this.marker.getPosition().lng() + this.increment;
         this.lat =  this.lng* this.m +  this.c;
         this.marker.setPosition({lat: this.lat, lng: this.lng});
@@ -96,7 +102,7 @@ class Flight{
     waypointChanging_down(j, k){
         //console.log("inside down");
         if(this.isDestinationReached(j, k)){
-            return;
+            return 0;
         }
         this.initLat =  this.nextLat;
         this.initLng = this.nextLng;
@@ -120,16 +126,20 @@ class Flight{
         }else{
             this.increment = Math.abs(this.increment);
         }
+
+        return 1;
     }
 
     isDestinationReached(j, k){
         //console.log("inside reached");
         this.count = this.count + 1;
         this.prevAltitude = this.currentAltitude;
-        this.currentAltitude = this.altitude[count-1];
+        this.currentAltitude = this.altitude[this.count-1];
+        //console.log("count = "+this.count);
         
         //console.log("coutn = "+this.count);
         if(this.count >= this.route.length){
+            //console.log("removed");
             //console.log("End reached");
             this.marker.setPosition({lat : this.nextLat, lng : this.nextLng});
             this.going = false;
@@ -147,8 +157,9 @@ class Flight{
     }
 
     waypointChanging_up(j, k){
+        //console.log("inside up");
         if(this.isDestinationReached(j, k)){
-            return;
+            return 0;
         }
         this.initLat =  this.nextLat;
         this.initLng =this.nextLng;
@@ -181,6 +192,7 @@ class Flight{
         }else{
             this.increment = Math.abs(this.increment);
         }
+        return 1;
     }
 
 }
@@ -194,3 +206,5 @@ class WayPoint{
     }
     
 }
+
+
