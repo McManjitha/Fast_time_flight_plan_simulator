@@ -5,6 +5,10 @@ const bodyParser = require('body-parser');
 const session = require('express-session');
 const path = require('path');
 const { log, error } = require('console');
+const fs = require('fs');
+const ObjectsToCsv = require('objects-to-csv');
+const { Transform } = require('json2csv');
+const json2csv = require('json2csv').parse;
 let count = 0;
 
 const app = express();
@@ -81,6 +85,9 @@ const PlaneShcema = new mongoose.Schema({
   },
   Altitude : {
     type : [String]
+  },
+  landed_time : {
+    type : String
   }
 });
 
@@ -96,6 +103,24 @@ const altitudeSchema = new mongoose.Schema({
   }
 });
 
+const landedFlightsSchema = new mongoose.Schema({
+  callSign : {
+    type : String
+  },
+  departure_time : {
+    type : String
+  },
+  landed_time : {
+    type : String
+  },
+  lat : {
+    type : Number
+  },
+  lng : {
+    type : Number
+  }
+});
+const collection4 = mongoose.model('landed_flights', landedFlightsSchema);
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '/index.html'));
@@ -128,20 +153,64 @@ app.get('/altitudes', (req, res) => {
 // handling the request for the flight data
 app.get('/data', (req, res) => {
   // Process the request and fetch data from the database
-  console.log("Plane fetch request received"+count);
+  //console.log("Plane fetch request received"+count);
   count++;
   const timeData = req.query.time;
   console.log("time collection "+timeData);
   const collection2 = mongoose.model(timeData, PlaneShcema);
   Promise.all([collection2.find().exec()])
   .then((doc2) =>{
-    console.log("doc2 = ");
+    //console.log("doc2 = ");
     //console.log(doc2);
     const data = {collection2: doc2[0]};
     res.send(JSON.stringify(data));
   }).catch((err) => {
     console.error(err);
   });
+});
+
+app.post('/destination', (req, res) => {
+  //let { callSign, startTime, endTime, lat, lng } = req.body;
+
+  let landedFlight = new collection4({
+    'callSign' : req.query.callSign,
+    'departure_time' : req.query.startTimee,
+    'landed_time' : req.query.endTime,
+    'lat' : req.query.lat,
+    'lng' : req.query.lng
+  }); 
+  // Save the landed flight document to the collection
+  landedFlight
+    .save()
+    .then(() => {
+      res.status(200).send('Landed flight'+req.query.callSign+' created successfully');
+    })
+    .catch((err) => {
+      console.error('Error saving landed flight:', err);
+      res.status(500).send('Error saving landed flight');
+    });
+})
+
+// Route to handle the GET request
+app.get('/download-landed-flights', async (req, res) => {
+  console.log("request received");
+  try {
+    // Fetch the documents from the "landed_flights" collection
+    const landedFlights = await collection4.find({});
+
+    // Convert the retrieved documents to a CSV string
+    const csv = json2csv(landedFlights, { fields: ['callSign', 'departure_time', 'landed_time', 'lat', 'lng'] });
+
+    // Set the response headers for file download
+    res.setHeader('Content-Disposition', 'attachment; filename=landed_flights.csv');
+    res.set('Content-Type', 'text/csv');
+
+    // Send the CSV file as the response
+    res.send(csv);
+  } catch (error) {
+    console.error('Error fetching documents:', error);
+    res.status(500).send('Internal Server Error');
+  }
 });
 
 /*app.get('/wayPoints', (req, res) =>{
