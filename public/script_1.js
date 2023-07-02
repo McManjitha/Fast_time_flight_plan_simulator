@@ -86,14 +86,14 @@ function firstRequest() {
 
 function sendRequest() {
   // Get the present hour
-  console.log("Inside sendrequest");
+  //console.log("Inside sendrequest");
   current_hour++;
-  console.log("current hour = "+current_hour);
-  console.log("test");
+ //console.log("current hour = "+current_hour);
+  //console.log("test");
 
   // Calculate the next hour
   const nextHour = (current_hour + 1) % 24;
-  console.log("Next hour = "+nextHour);
+  //console.log("Next hour = "+nextHour);
 
   // Create the string in the format "A-B"
   const data = current_hour + '-' + nextHour;
@@ -229,18 +229,21 @@ async function namingflightInfo(){
 }
 
 
+
+
 function main(){
 
   getWaypoints();
   scheduleRequest();
   namingflightInfo();
+  
 //  
 
   // setTimeout(function(){
   //   let ob1 =
   //   {
   //   "Callsign": "TR2466",
-  //   Departure_Time: "09.44.10",
+  //   Departure_Time: "05.14.30",
   //   "Destination Info": "WMKK",
   //   "Origin Info": "WSSS",
   //   Routing: "WSSS_WMKK",
@@ -319,6 +322,28 @@ function main(){
     }
   });
 
+  document.getElementById('createCSV').addEventListener('click', function() {
+    // Button click logic goes here
+    alert('Button clicked!');
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', '/download-landed-flights', true);
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.responseType = 'blob'; // Set the response type to blob
+
+    xhr.onload = function() {
+      if (xhr.status === 200) {
+        // Create a download link for the CSV file
+        const downloadLink = document.createElement('a');
+        downloadLink.href = window.URL.createObjectURL(xhr.response);
+        downloadLink.download = 'landed_flights.csv';
+        downloadLink.click();
+      } else {
+        console.error(xhr.statusText);
+      }
+    };
+    xhr.send();
+  });
+
   //-------------------------------------------------------------------------------------------
   setTimeout(function() {
       // this repeats at 1000ms intervals and calculate the new location of the plane
@@ -334,7 +359,6 @@ function main(){
               if(flightInfo[j][k].initLat > flightInfo[j][k].nextLat){
                 // Going down the map.
                 if( flightInfo[j][k].marker.getPosition().lat() < flightInfo[j][k].nextLat && flightInfo[j][k].count < flightInfo[j][k].route.length){
-                  //let ret = flightInfo[j][k].waypointChanging_down(j, k);
                   if(flightInfo[j][k].waypointChanging_down(j, k) && (flightInfo[j][k].previousAltitude != flightInfo[j][k].currentAltitude)){
                     let arrayName = flightInfo[j][k].currentAltitude;
                     let removedFlight = flightInfo[j].splice(k, 1);
@@ -348,19 +372,15 @@ function main(){
                 if( flightInfo[j][k].marker.getPosition().lat() > flightInfo[j][k].nextLat && flightInfo[j][k].count < flightInfo[j][k].route.length){
                   // Here, the plane reaches a destination gateway. Then it assign coordinates of the 
                   // previous journey end gateway to initial gateway coordiates of the next journey
-                  //flightInfo[j][k].waypointChanging_up(j, k);
-                //   console.log("over up");
                   if(flightInfo[j][k].waypointChanging_up(j, k) && (flightInfo[j][k].previousAltitude != flightInfo[j][k].currentAltitude)){
                     let arrayName = flightInfo[j][k].currentAltitude;
                     let removedFlight = flightInfo[j].splice(k, 1);
                     flightInfo[namingObject[arrayName]].push(removedFlight[0]);
                     k--;
-                    // console.log("if is good");
                   }
                 }
               }
             }
-
           }
           // copying flight info to another array
           compArr = Array.from(flightInfo, arr => [...arr]);
