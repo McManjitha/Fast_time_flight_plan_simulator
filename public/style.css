@@ -9,6 +9,7 @@
 
 #map {
   height: 700px;
+  position: relative;
 }
   
   /* 
@@ -54,5 +55,12 @@ body {
 
 .hidden {
   opacity: 0;
+}
+
+#buttonContainer {
+  position: absolute;
+  bottom: 50px;
+  right: 10px;
+  z-index: 1;
 }
 
