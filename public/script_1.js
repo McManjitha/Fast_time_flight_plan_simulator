@@ -22,11 +22,14 @@ var waypointList;
 var altitudesArr = [[], [], []];
 let uniqueAltitudes = [];
 let namingObject = {};// contains the naming of the flightInfo array rows
+const urlParams = new URLSearchParams(window.location.search);
+const username = urlParams.get('username');
 
 // sends a get request to fetch waypoint data
 function getWaypoints(){
   const xhr1 = new XMLHttpRequest();
-  xhr1.open('GET', '/wayPoints', true);
+  const url = '/wayPoints?username=' + encodeURIComponent(username);
+  xhr1.open('GET', url, true);
   xhr1.setRequestHeader('Content-Type', 'application/json');
 
   xhr1.onreadystatechange = function(){
@@ -61,7 +64,7 @@ function firstRequest() {
 
   // Perform your AJAX request here
   const xhr = new XMLHttpRequest();
-  const url = '/data?time=' + encodeURIComponent(data); // Include the string as a query parameter
+  const url = '/data?time=' + encodeURIComponent(data)+'&username='+encodeURIComponent(username); // Include the string as a query parameter
   xhr.open('GET', url, true);
   xhr.setRequestHeader('Content-Type', 'application/json');
 
@@ -70,6 +73,7 @@ function firstRequest() {
       allFlights = [];
       console.log("response recieved");
       const response = JSON.parse(xhr.responseText);
+      //console.log("response collection");
       //console.log(response.collection2);
 
       for(let i = 0; i < response.collection2.length; i++){
@@ -101,7 +105,7 @@ function sendRequest() {
 
   // Perform your AJAX request here
   const xhr = new XMLHttpRequest();
-  const url = '/data?time=' + encodeURIComponent(data); // Include the string as a query parameter
+  const url = '/data?time=' + encodeURIComponent(data) + '&username=' + encodeURIComponent(username) ; // Include the string as a query parameter
   xhr.open('GET', url, true);
   xhr.setRequestHeader('Content-Type', 'application/json');
 
@@ -124,25 +128,31 @@ function sendRequest() {
 function getAltitudes(){
   return new Promise(function(resolve, reject) {
     const xhr2 = new XMLHttpRequest();
-    xhr2.open('GET', '/altitudes', true);
+    const url = '/altitudes?username=' + encodeURIComponent(username); 
+    xhr2.open('GET', url, true);
     xhr2.setRequestHeader('Content-Type', 'application/json');
 
-    xhr2.onreadystatechange = function(){
-      if(xhr2.readyState === 4 && xhr2.status === 200){
-        const altitudes = JSON.parse(xhr2.responseText);
-        altitudesArr[0] = rearrangeArray(altitudes.TakeOff_levels);
-        altitudesArr[1] = rearrangeArray(altitudes.Cruise_Levels);
-        altitudesArr[2] = rearrangeArray(altitudes.Decent_levels);
-        
-        uniqueAltitudes = flattenAndRemoveDuplicates(altitudesArr);
-        console.log("uniqueAltitudes");
-        console.log(uniqueAltitudes);
-        resolve();
-        
-      }else{
-        console.error(xhr2.status);
+    xhr2.onreadystatechange = function() {
+      if (xhr2.readyState === 4) {
+        if (xhr2.status === 200) {
+          if (xhr2.responseText) {
+            const altitudes = JSON.parse(xhr2.responseText);
+            altitudesArr[0] = rearrangeArray(altitudes.TakeOff_levels);
+            altitudesArr[1] = rearrangeArray(altitudes.Cruise_Levels);
+            altitudesArr[2] = rearrangeArray(altitudes.Decent_levels);
+
+            uniqueAltitudes = flattenAndRemoveDuplicates(altitudesArr);
+            //console.log("uniqueAltitudes");
+            //console.log(uniqueAltitudes);
+            resolve();
+          } else {
+            console.error('Empty response');
+          }
+        } else {
+          console.error(xhr2.status);
+        }
       }
-    }
+    };
     xhr2.send();
   });
 }
@@ -157,7 +167,7 @@ function scheduleRequest() {
   console.log("Delay = "+(delay/1000)+" s");
   firstRequest();
   setTimeout(() => {
-    console.log("fetching time reached");
+    ///console.log("fetching time reached");
     sendRequest();
     setInterval(function() {
       sendRequest();
@@ -166,7 +176,7 @@ function scheduleRequest() {
 }
 
 function collisionHandling(){
-  console.log('Inside collisionHandling');
+  //console.log('Inside collisionHandling');
   //console.log(compArr);
   for(let j = 0; j < compArr.length; j++){
     //console.log("Inside for loop");
@@ -228,15 +238,12 @@ async function namingflightInfo(){
   }
 }
 
-
-
-
 function main(){
+  //console.log('username = '+username);
 
   getWaypoints();
   scheduleRequest();
   namingflightInfo();
-  
 //  
 
   // setTimeout(function(){
@@ -278,6 +285,7 @@ function main(){
           //console.log("the flight");
           //console.log(allFlights[m]);
           if((allFlights.length > 0) && (allFlights[m].currentAltitude == altitudesArr[0][j])){
+            allFlights[m].landed = true;
             flightInfo[namingObject[altitudesArr[0][j]]].push(allFlights[m]);
             allFlights.splice(m, 1);
             m--;
@@ -288,8 +296,8 @@ function main(){
     //console.log("allFlights = ");
     //console.log(allFlights);
 
-    console.log("flightInfo = ");
-    console.log(flightInfo);
+    //console.log("flightInfo = ");
+    //console.log(flightInfo);
     
 
   }, 7000);
@@ -324,7 +332,6 @@ function main(){
 
   document.getElementById('createCSV').addEventListener('click', function() {
     // Button click logic goes here
-    alert('Button clicked!');
     const xhr = new XMLHttpRequest();
     xhr.open('GET', '/download-landed-flights', true);
     xhr.setRequestHeader('Content-Type', 'application/json');
@@ -385,7 +392,7 @@ function main(){
           // copying flight info to another array
           compArr = Array.from(flightInfo, arr => [...arr]);
           // collision handling
-          //collisionHandling();
+          collisionHandling();
         }
         
       }

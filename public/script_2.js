@@ -148,6 +148,9 @@ function initalString_2(initLat, initLng, nextLat, nextLng){
 }
 
 function rearrangeArray(inputString){
+  //console.log("rearrangeArray");
+  //console.log("inputString");
+  //console.log(inputString);
   // remove initial '[' and final ']' characters
   inputString = inputString.slice(1, -1);
   // split the input string by commas
@@ -157,6 +160,7 @@ function rearrangeArray(inputString){
     // remove any leading or trailing whitespace
     element = element.trim();
     // return the element as a string
+    
     return String(element);
   });
   // return the output array
